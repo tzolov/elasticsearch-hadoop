@@ -156,6 +156,45 @@ Tap out = new ESTap("radio/artists", new Fields("name", "url", "picture"));
 new HadoopFlowConnector().connect(in, out, new Pipe("write-to-ES")).complete();
 ```
 
+## [Crunch][]
+ES-Hadoop provides a dedicate ElasticSearch [Source][], `ESSource` and [Target][], 'ESTarget' that can be used to access ElasticSearch.
+For detail sample check the ESSourceIntegartionTest.java
+### Reading
+```java
+ESSource esSource = new ESSource.Builder("twitter/tweet/_search?q=user:*").build();
+MRPipeline pipeline = new MRPipeline(ESSourceIntegartionTest.class);
+PCollection<MapWritable> tweets = pipeline.read(esSource);
+```
+### Writing
+To writhe
+```java
+PCollection<MyWritableSchema> myWritableSchemaCollection = ...
+ESTarget esTarget = new ESTarget("localhost", 9200, "twitter/count/");
+pipeline.write(myWritableSchemaCollection, esTarget);
+```
+Define the output data format as a custom (Writable) class. It needs to be Writable to make it work with Crunch 
+ 
+```java
+public class MyWritableSchema implements Writable, Serializable {
+
+  private String userName;
+
+  public String getUserName() { return userName; }
+
+  public void setUserName(String userName) { this.userName = userName;}
+  
+    @Override
+  public void readFields(DataInput arg0) throws IOException {
+    // Not required for the ES
+  }
+
+  @Override
+  public void write(DataOutput arg0) throws IOException {
+    // Not required for the ES
+  }
+}
+```
+
 # Building the source
 
 ElasticSearch Hadoop uses [Gradle][] for its build system and it is not required to have it installed on your machine.
@@ -176,3 +215,6 @@ To create a distributable jar, run `gradlew -x test build` from the command line
 [DistributedCache]: http://hadoop.apache.org/docs/stable/api/org/apache/hadoop/filecache/DistributedCache.html
 [Cascading]: http://www.cascading.org/
 [Tap]: http://docs.cascading.org/cascading/2.1/userguide/html/ch03s05.html
+[Crunch]: http://crunch.apache.org
+[Source]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/Source.html
+[Target]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/Target.html
