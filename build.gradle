@@ -11,7 +11,10 @@ description = 'ElasticSearch Hadoop'
 group = 'org.elasticsearch.hadoop'
 
 repositories {
-  mavenCentral()
+  
+  mavenCentral()  
+  mavenLocal()
+    
   maven { url "http://oss.sonatype.org/content/groups/public/" }
   // JDO ec2 missing from Maven Central
   maven { url "http://www.datanucleus.org/downloads/maven2" }
@@ -45,6 +48,9 @@ dependencies {
 	// Cascading
 	optional("cascading:cascading-hadoop:$cascadingVersion")
 	optional("cascading:cascading-local:$cascadingVersion")
+	
+	// Crunch
+	optional("org.apache.crunch:crunch:$crunchVersion") { changing=true }
     
     // needed by the Hive Server tests
     testRuntime "$hiveGroup:hive-builtins:$hiveVersion" 

@@ -22,10 +22,10 @@ import org.junit.Test;
  */
 public class ESSourceIntegartionTest implements Serializable {
 
-  @Test
+  //@Test
   public void testCrunchElasticSearchIntegration() throws InterruptedException {
 
-    // NOTE: The Avro Type Family is not supported at the moment
+    // NOTE: The Avro TypeFamily is not supported at the moment
 
     WritableTypeFamily tf = WritableTypeFamily.getInstance();
 
@@ -68,5 +68,9 @@ public class ESSourceIntegartionTest implements Serializable {
     pipeline.write(esUserTweetCount, new ESTarget("localhost", 9200, "twitter/count/"));
 
     pipeline.done();
+  }
+  
+  public static void main(String[] args) throws InterruptedException {
+    new ESSourceIntegartionTest().testCrunchElasticSearchIntegration();
   }
 }
