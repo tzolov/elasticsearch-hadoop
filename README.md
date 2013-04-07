@@ -159,10 +159,10 @@ new HadoopFlowConnector().connect(in, out, new Pipe("write-to-ES")).complete();
 ## [Crunch][]
 ES-Hadoop provides a dedicate ElasticSearch [Source][] (`ESSource`) and [Target][] (`ESTarget`) to read (query) and write (update) ElasticSearch.
 
-`ESSourceIntegartionTest.java` provides a detailed usage example.
+Sample implementation: [ESSourceIntegartionTest][].
 
 ```
-Note that current implementation supports only [WritableTypeFamily][]. 
+Note: Current implementation supports only WritableTypeFamily. 
 ```
 ### Reading
 ```java
@@ -177,11 +177,11 @@ PCollection<MyWritableSchema> myWritableSchemaCollection = ...
 ESTarget esTarget = new ESTarget("localhost", 9200, "twitter/count/");
 pipeline.write(myWritableSchemaCollection, esTarget);
 ```
-The output data format is specified by a Java class. This approach uses Jackson's object serialization (inside the `RestClient`) 
-to convert the class instances into a proper JSON source object. 
+The output data format is specified as Java class. This approach uses Jackson's object serialization (inside the `RestClient`) 
+to convert the class instances into JSON source objects. 
 
-Note: Because of Crunch the provided class has to be a `Writable` instance although you can leave the `readFields()` and `write()` 
-methods implementation empty. 
+Note: Crunch requires that the class implements the `Writable` interface. The `readFields()` and `write()` 
+methods implementation can be empty. 
    
 ```java
 public class MyWritableSchema implements Writable, Serializable {
@@ -227,4 +227,4 @@ To create a distributable jar, run `gradlew -x test build` from the command line
 [Crunch]: http://crunch.apache.org
 [Source]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/Source.html
 [Target]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/Target.html
-[WritableTypeFamily]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/types/writable/WritableTypeFamily.html
+[ESSourceIntegartionTest]: https://github.com/tzolov/elasticsearch-hadoop/blob/master/src/test/java/org/elasticsearch/hadoop/crunch/ESSourceIntegartionTest.java
