@@ -157,34 +157,40 @@ new HadoopFlowConnector().connect(in, out, new Pipe("write-to-ES")).complete();
 ```
 
 ## [Crunch][]
-ES-Hadoop provides a dedicate ElasticSearch [Source][] (`ESSource`) and [Target][] (`ESTarget`) to read (query) and write (update) ElasticSearch.
-
-Sample implementation: [ESSourceIntegartionTest][].
+ES-Hadoop provides ElasticSearch [Source][] (`ESSource`) and [Target][] (`ESTarget`) for reading and writing ElasticSearch indexes.
 
 ```
-Note: Current implementation supports only WritableTypeFamily. 
+Note: Only the Crunch's WritableTypeFamily is supported! 
 ```
+
+Annotated sample application is provided here: [ESCrunchIntegartionTest][].
+
 ### Reading
 ```java
-ESSource esSource = new ESSource.Builder("twitter/tweet/_search?q=user:*").build();
-MRPipeline pipeline = new MRPipeline(ESSourceIntegartionTest.class);
+ESSource esSource =  new ESSource.Builder("twitter/tweet/_search?q=user:*").setHost("localhost").setPort(9200).build();
+MRPipeline pipeline = new MRPipeline(...);
 PCollection<MapWritable> tweets = pipeline.read(esSource);
+...
 ```
+The result is a collection of `MapWritable` elements - one element per ES `source` object. ES-Hadoop uses `MapWritable` to represent the input JSON data.
+
 ### Writing
 To writhe
 ```java
-PCollection<MyWritableSchema> myWritableSchemaCollection = ...
-ESTarget esTarget = new ESTarget("localhost", 9200, "twitter/count/");
-pipeline.write(myWritableSchemaCollection, esTarget);
+PCollection<MyJsonOutputSchema> myJsonOutputCollection = ...
+ESTarget esTarget = new ESTarget.Builder("twitter/count/").setHost("localhost").setPort(9200).build();
+pipeline.write(myJsonOutputCollection, esTarget);
 ```
-The output data format is specified as Java class. This approach uses Jackson's object serialization (inside the `RestClient`) 
-to convert the class instances into JSON source objects. 
+The output JSON format is defined via a custom Java class. It relies on Jackson's object serialization (part of the ES-Hadoop `RestClient`) 
+to convert the output data into JSON source objects stored in ES. 
 
-Note: Crunch requires that the class implements the `Writable` interface. The `readFields()` and `write()` 
-methods implementation can be empty. 
-   
+```
+Note: The custom Java class has to implement the `Writable` interface to fit with Crunch's WritableTypeFamily.
+Despite of this you can leave empty the interface methods implementation. 
+```
+Sample Java class used to define the output JSON format.   
 ```java
-public class MyWritableSchema implements Writable, Serializable {
+public class MyJsonOutputSchema implements Writable, Serializable {
 
   private String userName;
 
@@ -192,14 +198,14 @@ public class MyWritableSchema implements Writable, Serializable {
 
   public void setUserName(String userName) { this.userName = userName;}
   
-    @Override
+  @Override
   public void readFields(DataInput arg0) throws IOException {
-    // Not required for the ES
+    // Not required for the ES output
   }
 
   @Override
   public void write(DataOutput arg0) throws IOException {
-    // Not required for the ES
+    // Not required for the ES output
   }
 }
 ```
@@ -210,7 +216,11 @@ ElasticSearch Hadoop uses [Gradle][] for its build system and it is not required
 
 To create a distributable jar, run `gradlew -x test build` from the command line; once completed you will find the jar in `build\libs`.
 
-
+```
+Note: Crunch integration requires latest trunk code (0.6.0-SNAPSHOT). Therefore clone, build and install Crunch in your local Maven repository:
+ $ git clone http://git-wip-us.apache.org/repos/asf/crunch.git
+ $ mvn clean install -DskipTests -Drat.numUnapprovedLicenses=1000
+```
 
 [Hadoop]: http://hadoop.apache.org
 [MapReduce]: http://hadoop.apache.org/docs/r1.0.4/mapred_tutorial.html
@@ -227,4 +237,4 @@ To create a distributable jar, run `gradlew -x test build` from the command line
 [Crunch]: http://crunch.apache.org
 [Source]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/Source.html
 [Target]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/Target.html
-[ESSourceIntegartionTest]: https://github.com/tzolov/elasticsearch-hadoop/blob/master/src/test/java/org/elasticsearch/hadoop/crunch/ESSourceIntegartionTest.java
+[ESCrunchIntegartionTest]: https://github.com/tzolov/elasticsearch-hadoop/blob/master/src/test/java/org/elasticsearch/hadoop/crunch/ESCrunchIntegartionTest.java

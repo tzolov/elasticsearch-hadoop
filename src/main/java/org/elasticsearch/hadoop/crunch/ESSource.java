@@ -2,10 +2,14 @@ package org.elasticsearch.hadoop.crunch;
 
 import java.io.IOException;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.crunch.Source;
+import org.apache.crunch.io.CrunchInputs;
+import org.apache.crunch.io.FormatBundle;
 import org.apache.crunch.types.PType;
 import org.apache.crunch.types.writable.Writables;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.elasticsearch.hadoop.mr.ESConfigConstants;
@@ -13,7 +17,6 @@ import org.elasticsearch.hadoop.mr.ESInputFormat;
 import org.elasticsearch.hadoop.util.ConfigUtils;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 
 public class ESSource implements Source<MapWritable> {
 
@@ -58,15 +61,26 @@ public class ESSource implements Source<MapWritable> {
 
   @Override
   public void configureSource(Job job, int inputId) throws IOException {
+
     Configuration conf = job.getConfiguration();
-    
-    //TODO to handle multiple Inputs (e.g. inputId != -1)
-    Preconditions.checkArgument((inputId == -1), "Multiple input mode is not supported yet. The inputId = ", inputId);
-    
-    conf.set(ESConfigConstants.ES_ADDRESS, ConfigUtils.detectHostPortAddress(host, port, conf));
-    conf.set(ESConfigConstants.ES_QUERY, esQuery);
-    conf.set(ESConfigConstants.ES_LOCATION, esQuery);
-    job.setInputFormatClass(ESInputFormat.class);
+
+    if (inputId == -1) {// single input
+
+      conf.set(ESConfigConstants.ES_ADDRESS, ConfigUtils.detectHostPortAddress(host, port, conf));
+      conf.set(ESConfigConstants.ES_QUERY, esQuery);
+      conf.set(ESConfigConstants.ES_LOCATION, esQuery);
+      job.setInputFormatClass(ESInputFormat.class);
+
+    } else { // multiple inputs
+      
+      FormatBundle<ESInputFormat> inputBundle = FormatBundle.forInput(ESInputFormat.class)
+          .set(ESConfigConstants.ES_ADDRESS, ConfigUtils.detectHostPortAddress(host, port, conf))
+          .set(ESConfigConstants.ES_QUERY, esQuery).set(ESConfigConstants.ES_LOCATION, esQuery);
+
+      Path dummy = new Path("/es/" + Base64.encodeBase64String(esQuery.getBytes()));
+
+      CrunchInputs.addInputPath(job, dummy, inputBundle, inputId);
+    }
   }
 
   @Override
