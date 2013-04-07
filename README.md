@@ -157,8 +157,13 @@ new HadoopFlowConnector().connect(in, out, new Pipe("write-to-ES")).complete();
 ```
 
 ## [Crunch][]
-ES-Hadoop provides a dedicate ElasticSearch [Source][], `ESSource` and [Target][], 'ESTarget' that can be used to access ElasticSearch.
-For detail sample check the ESSourceIntegartionTest.java
+ES-Hadoop provides a dedicate ElasticSearch [Source][] (`ESSource`) and [Target][] (`ESTarget`) to read (query) and write (update) ElasticSearch.
+
+`ESSourceIntegartionTest.java` provides a detailed usage example.
+
+```
+Note that current implementation supports only [WritableTypeFamily][]. 
+```
 ### Reading
 ```java
 ESSource esSource = new ESSource.Builder("twitter/tweet/_search?q=user:*").build();
@@ -172,8 +177,12 @@ PCollection<MyWritableSchema> myWritableSchemaCollection = ...
 ESTarget esTarget = new ESTarget("localhost", 9200, "twitter/count/");
 pipeline.write(myWritableSchemaCollection, esTarget);
 ```
-Define the output data format as a custom (Writable) class. It needs to be Writable to make it work with Crunch 
- 
+The output data format is specified by a Java class. This approach uses Jackson's object serialization (inside the `RestClient`) 
+to convert the class instances into a proper JSON source object. 
+
+Note: Because of Crunch the provided class has to be a `Writable` instance although you can leave the `readFields()` and `write()` 
+methods implementation empty. 
+   
 ```java
 public class MyWritableSchema implements Writable, Serializable {
 
@@ -218,3 +227,4 @@ To create a distributable jar, run `gradlew -x test build` from the command line
 [Crunch]: http://crunch.apache.org
 [Source]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/Source.html
 [Target]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/Target.html
+[WritableTypeFamily]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/types/writable/WritableTypeFamily.html
