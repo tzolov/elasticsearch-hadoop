@@ -160,33 +160,34 @@ new HadoopFlowConnector().connect(in, out, new Pipe("write-to-ES")).complete();
 ES-Hadoop provides ElasticSearch [Source][] (`ESSource`) and [Target][] (`ESTarget`) for reading and writing ElasticSearch indexes.
 
 ```
-Note: Only the Crunch's WritableTypeFamily is supported! 
+Note: The Crunch AvroTypeFamily is not supported yet! 
 ```
 
-Annotated sample application is provided here: [ESCrunchIntegartionTest][].
+Sample annotated application is available at: [ESCrunchIntegartionTest][].
 
 ### Reading
 ```java
-ESSource esSource =  new ESSource.Builder("twitter/tweet/_search?q=user:*").setHost("localhost").setPort(9200).build();
 MRPipeline pipeline = new MRPipeline(...);
+ESSource esSource =  new ESSource.Builder("twitter/tweet/_search?q=user:*")
+									.setHost("localhost").setPort(9200).build();
 PCollection<MapWritable> tweets = pipeline.read(esSource);
 ...
 ```
-The result is a collection of `MapWritable` elements - one element per ES `source` object. ES-Hadoop uses `MapWritable` to represent the input JSON data.
+The result collection of `MapWritable` elements represents the `source` data as it appears in the input ES index. 
+The JSON format in ES is mapped into Hadoop `MapWritable` types. Use the 'get(new Text("key"))` method to read the data.
 
 ### Writing
-To writhe
 ```java
 PCollection<MyJsonOutputSchema> myJsonOutputCollection = ...
 ESTarget esTarget = new ESTarget.Builder("twitter/count/").setHost("localhost").setPort(9200).build();
 pipeline.write(myJsonOutputCollection, esTarget);
 ```
-The output JSON format is defined via a custom Java class. It relies on Jackson's object serialization (part of the ES-Hadoop `RestClient`) 
-to convert the output data into JSON source objects stored in ES. 
+The output JSON format is defined through a custom Java class (MyJsonOutputSchema in the example above). This approach relies on 
+the Jackson serialization (see the `RestClient`) to convert the output Crunch data into JSON source objects stored in ES. 
 
 ```
-Note: The custom Java class has to implement the `Writable` interface to fit with Crunch's WritableTypeFamily.
-Despite of this you can leave empty the interface methods implementation. 
+Note: To fit the Java class with Crunch's `WritableTypeFamily` it has implement the `Writable` and `Serializable` interfaces.
+All Writable methods though can have empty implementations. 
 ```
 Sample Java class used to define the output JSON format.   
 ```java
@@ -217,7 +218,8 @@ ElasticSearch Hadoop uses [Gradle][] for its build system and it is not required
 To create a distributable jar, run `gradlew -x test build` from the command line; once completed you will find the jar in `build\libs`.
 
 ```
-Note: Crunch integration requires latest trunk code (0.6.0-SNAPSHOT). Therefore clone, build and install Crunch in your local Maven repository:
+Note: To satisfy the Crunch:0.6.0-SNAPSHOT (e.g. trunk) dependency you have to checkout and install Crunch in 
+your local Maven repository:
  $ git clone http://git-wip-us.apache.org/repos/asf/crunch.git
  $ mvn clean install -DskipTests -Drat.numUnapprovedLicenses=1000
 ```

@@ -39,8 +39,7 @@ import org.apache.hadoop.io.Text;
  * - Create sample twitter index as explained here:
  * https://github.com/elasticsearch/elasticsearch#indexing.
  * 
- * Verify that the http://localhost:9200/twitter/tweet/_search?q=* contains the
- * tweets.
+ * Check the resutl index: http://localhost:9200/twitter/tweet/_search?q=*
  * 
  * @author (Christian Tzolov) tzolov@apache.org
  */
