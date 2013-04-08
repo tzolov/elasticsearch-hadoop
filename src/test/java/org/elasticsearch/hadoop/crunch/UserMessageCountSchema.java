@@ -25,17 +25,29 @@ import org.apache.hadoop.io.Writable;
 import com.google.common.base.Objects;
 
 /**
- * This class implements Writable just to be compatible with Crunch's type
- * system. The class is used for JSON serialization only. It is not stored in
- * Hadoop. Therefore it doesn't need readFeildes or write
+ * This class defines the JSON format to be stored in ES. Jackson's ObjectMapper
+ * (inside the RestClient) converts the output Crunch data into JSON source
+ * objects stored in ES.
  * 
- * Relies on Jackson's default Object serialization
+ * Note: UserMessageCountSchema implements the Writable interface to fit with
+ * Crunch's WritableTypeFamily. But because it is not used for any Hadoop
+ * storage (only as meant to encode JSON in ES) the Writable methods are empty.
  */
 public class UserMessageCountSchema implements Writable, Serializable {
 
   private String userName;
 
   private long tweetCount;
+
+  public UserMessageCountSchema() {
+    this.userName = null;
+    this.tweetCount = -1;
+  }
+
+  public UserMessageCountSchema(String userName, long tweetCount) {
+    this.userName = userName;
+    this.tweetCount = tweetCount;
+  }
 
   public String getUserName() {
     return userName;

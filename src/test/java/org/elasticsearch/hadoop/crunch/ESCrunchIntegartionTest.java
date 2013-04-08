@@ -29,17 +29,21 @@ import org.apache.hadoop.io.Text;
 
 /**
  * Sample application that reads a tweeter index from ES, uses Crunch to count
- * the number of tweets per user and write the result as different ES index
- * type.
+ * the number of tweets per user and write the result back to ES in a different
+ * index type.
+ * 
+ * <br/>
+ * <br/>
  * 
  * Prerequisites:
  * 
- * - Running ElasticSerach node at: http://localhost:9200
+ * <li>Install Crunch:0.6.0-SNAPSHOT in your local Maven repository.</li>
  * 
- * - Create sample twitter index as explained here:
- * https://github.com/elasticsearch/elasticsearch#indexing.
+ * <li>Start ElasticSerach node accessible at: http://localhost:9200</li>
  * 
- * Check the resutl index: http://localhost:9200/twitter/tweet/_search?q=*
+ * <li>Create sample twitter index as explained here:
+ * https://github.com/elasticsearch/elasticsearch#indexing. <br/>
+ * Check the index: http://localhost:9200/twitter/tweet/_search?q=*</li>
  * 
  * @author (Christian Tzolov) tzolov@apache.org
  */
@@ -48,9 +52,10 @@ public class ESCrunchIntegartionTest implements Serializable {
   // @Test
   public void testESSourceAndESTarget() throws InterruptedException {
 
-    // NOTE: The Avro TypeFamily is not supported at the moment
+    // NOTE: The AvroTypeFamily is not supported yet.
     WritableTypeFamily tf = WritableTypeFamily.getInstance();
 
+    // Create new Crunch pipeline
     MRPipeline pipeline = new MRPipeline(ESCrunchIntegartionTest.class);
 
     // 1. Get all tweets from the 'twitter' ES index. The result is a collection
@@ -58,7 +63,7 @@ public class ESCrunchIntegartionTest implements Serializable {
     PCollection<MapWritable> tweets = pipeline.read(new ESSource.Builder("twitter/tweet/_search?q=user:*")
         .setHost("localhost").setPort(9200).build());
 
-    // 2. Get the user names form the input tweets and project out the rest.
+    // 2. Extract the user names form the tweets.
     PCollection<String> users = tweets.parallelDo(new MapFn<MapWritable, String>() {
       @Override
       public String map(MapWritable inputMap) {
@@ -66,29 +71,21 @@ public class ESCrunchIntegartionTest implements Serializable {
       }
     }, tf.strings());
 
-    // 3. Count the number of tweets per user
+    // 3. Get the number of tweets per user.
     PTable<String, Long> numberOfTweetsPerUser = Aggregate.count(users);
 
-    // 4. Generate ES compatible output format. The UserMessageCountSchema class
-    // is used to define the JSON format stored in ES.
+    // 4. Generate ES compatible output format. The UserMessageCountSchema
+    // class defines the JSON format stored in ES.
     PCollection<UserMessageCountSchema> esUserTweetCount = numberOfTweetsPerUser.parallelDo(
         new MapFn<Pair<String, Long>, UserMessageCountSchema>() {
-
           @Override
           public UserMessageCountSchema map(Pair<String, Long> userToMessageCount) {
-
-            UserMessageCountSchema esUserMessageCount = new UserMessageCountSchema();
-
-            esUserMessageCount.setUserName(userToMessageCount.first());
-            esUserMessageCount.setTweetCount(userToMessageCount.second());
-
-            return esUserMessageCount;
+            return new UserMessageCountSchema(userToMessageCount.first(), userToMessageCount.second());
           }
         }, tf.records(UserMessageCountSchema.class));
 
-    // 5. Write the counts into a new ES index type ('twitter/count'). Open the
-    // following link to verify the result:
-    // http://localhost:9200/twitter/count/_search?q=*
+    // 5. Write the result into ('twitter/count') ES index type. Check the
+    // result: http://localhost:9200/twitter/count/_search?q=*
     pipeline.write(esUserTweetCount, new ESTarget.Builder("twitter/count/").setHost("localhost").setPort(9200).build());
 
     pipeline.done();

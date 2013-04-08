@@ -187,7 +187,7 @@ This approach relies on Jackson's `ObjectMapper` serialization (inside the `Rest
 data into JSON source objects stored in ES. The output JSON format is defined with a custom Java class (MyJsonOutputSchema in the example above).  
 
 ```
-Note: To fit with Crunch's `WritableTypeFamily` the Java class has implement the Writable and Serializable interfaces.
+Note: To fit with Crunch's `WritableTypeFamily` the Java class has to implement the Writable and Serializable interfaces.
 All Writable methods can have empty implementations. 
 ```
 Sample Java class used to define the output JSON format.   
