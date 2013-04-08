@@ -31,4 +31,6 @@ public interface ESConfigConstants {
     public static final String ES_QUERY = "es.mr.query";
 
     public static final String ES_ADDRESS = "es.address";
+    
+    public static final String ES_OBJECTMAPPER_CLASS = "es.objectmapper.class";
 }

@@ -35,7 +35,11 @@ public class BufferedRestClient implements Closeable {
     private RestClient client;
 
     public BufferedRestClient(String targetUri) {
-        this(new RestClient(targetUri));
+      this(new RestClient(targetUri, null));
+    }
+
+    public BufferedRestClient(String targetUri, String objectMapperClass) {
+        this(new RestClient(targetUri, objectMapperClass));
     }
 
     public BufferedRestClient(RestClient client) {

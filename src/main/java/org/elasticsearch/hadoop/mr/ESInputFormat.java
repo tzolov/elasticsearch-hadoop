@@ -95,6 +95,7 @@ public class ESInputFormat extends InputFormat<Text, MapWritable> implements
         private String currentKey;
         private MapWritable currentValue;
         private int size = 0;
+        private String objectMapperClass;
 
         // default constructor used by the NEW api
         ESRecordReader() {
@@ -117,8 +118,9 @@ public class ESInputFormat extends InputFormat<Text, MapWritable> implements
             size = esSplit.size;
 
             query = cfg.get(ES_QUERY);
+            objectMapperClass = cfg.get(ES_OBJECTMAPPER_CLASS);
             // initialize REST client
-            client = new BufferedRestClient(ConfigUtils.detectHostPortAddress(cfg));
+            client = new BufferedRestClient(ConfigUtils.detectHostPortAddress(cfg), objectMapperClass);
         }
 
         @Override

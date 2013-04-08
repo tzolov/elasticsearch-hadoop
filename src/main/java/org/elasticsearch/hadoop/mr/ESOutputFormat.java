@@ -69,10 +69,12 @@ public class ESOutputFormat extends OutputFormat<Object, Object> implements org.
 
         private final String index;
         private final BufferedRestClient client;
+        private String objectMapperClass;
 
         public ESRecordWriter(Configuration cfg) {
             index = cfg.get(ES_INDEX);
-            client = new BufferedRestClient(ConfigUtils.detectHostPortAddress(cfg));
+            objectMapperClass = cfg.get(ES_OBJECTMAPPER_CLASS);
+            client = new BufferedRestClient(ConfigUtils.detectHostPortAddress(cfg), objectMapperClass);
         }
 
         @Override
