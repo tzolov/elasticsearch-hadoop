@@ -195,21 +195,23 @@ Sample Java class used to define the output JSON format.
 public class MyJsonOutputSchema implements Writable, Serializable {
 
   private String userName;
-
+  
   public String getUserName() { return userName; }
-
   public void setUserName(String userName) { this.userName = userName;}
   
   @Override
-  public void readFields(DataInput arg0) throws IOException {
-    // Not required for the ES output
-  }
-
+  public void readFields(DataInput arg0) throws IOException { /* empty */ }
   @Override
-  public void write(DataOutput arg0) throws IOException {
-    // Not required for the ES output
-  }
+  public void write(DataOutput arg0) throws IOException { /* empty */ }
 }
+```
+This class is mapped into the following JSON format:
+```JSON
+...
+  _source: {
+    userName: "Crunch user"
+  }
+...
 ```
 
 # Building the source
