@@ -13,24 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.mr;
+package org.elasticsearch.hadoop;
+
+import java.util.Properties;
+
+import org.elasticsearch.hadoop.cfg.PropertiesSettings;
 
 /**
- * Class providing the various Configuration parameters used by the ElasticSearch Map/Reduce Input/Output formats.
+ * Tweaked settings for testing.
  */
-public interface ESConfigConstants {
+public class TestSettings extends PropertiesSettings {
 
-    public static final String ES_HOST = "es.host";
-    public static final String ES_PORT = "es.port";
-    public static final String ES_LOCATION = "es.location";
+    private final static Properties TESTING_PROPS = new Properties();
 
-    /**
-     * For internal use - do not define.
-     */
-    public static final String ES_INDEX = "es.mr.index";
-    public static final String ES_QUERY = "es.mr.query";
+    static {
+        TESTING_PROPS.put(ES_BATCH_SIZE_BYTES, "8kb");
+    }
 
+<<<<<<< HEAD:src/main/java/org/elasticsearch/hadoop/mr/ESConfigConstants.java
     public static final String ES_ADDRESS = "es.address";
     
     public static final String ES_OBJECTMAPPER_CLASS = "es.objectmapper.class";
+=======
+    public TestSettings() {
+        super(TESTING_PROPS);
+    }
+>>>>>>> upstream/master:src/test/java/org/elasticsearch/hadoop/TestSettings.java
 }

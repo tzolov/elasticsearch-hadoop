@@ -35,6 +35,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
+import org.elasticsearch.hadoop.cfg.Settings;
 
 /**
  * REST client used for interacting with ElasticSearch. Performs basic
@@ -45,15 +47,11 @@ public class RestClient implements Closeable {
   private static final Log log = LogFactory.getLog(RestClient.class);
 
   private HttpClient client;
-  private final String target;
   private ObjectMapper mapper = new ObjectMapper();
 
-  public RestClient(String targetUri) {
-    this(targetUri, null);
-  }
-  
-  public RestClient(String targetUri, String objectMapperClass) {
+  public RestClient(Settings settings) {
 
+    String objectMapperClass = settings.getProperty(ConfigurationOptions.ES_OBJECTMAPPER_CLASS);
     if (objectMapperClass == null) {
       mapper = new ObjectMapper();
     } else {
@@ -61,25 +59,27 @@ public class RestClient implements Closeable {
     }
 
     HttpClientParams params = new HttpClientParams();
-    params.setConnectionManagerTimeout(60 * 1000);
+    params.setConnectionManagerTimeout(settings.getHttpTimeout());
 
     client = new HttpClient(params);
     HostConfiguration hostConfig = new HostConfiguration();
+    String targetUri = settings.getTargetUri();
     try {
       hostConfig.setHost(new URI(targetUri, false));
     } catch (IOException ex) {
       throw new IllegalArgumentException("Invalid target URI " + targetUri, ex);
     }
     client.setHostConfiguration(hostConfig);
-    this.target = targetUri;
   }
 
   private ObjectMapper createObjectMapper(String objectMapperClass) {
+
     try {
       @SuppressWarnings("unchecked")
       Class<ObjectMapper> cutomObjectMapper = (Class<ObjectMapper>) Class.forName(objectMapperClass);
       ObjectMapper objectMapper = cutomObjectMapper.newInstance();
       return objectMapper;
+
     } catch (ClassNotFoundException ex) {
       throw new IllegalArgumentException("Missing custom ObjectMapper class " + objectMapperClass, ex);
     } catch (InstantiationException ex) {
@@ -89,6 +89,7 @@ public class RestClient implements Closeable {
       throw new IllegalStateException("Cannot instantiate  an abstract class or interface ObjectMapper for class:"
           + objectMapperClass, ex);
     }
+
   }
 
   /**
@@ -116,17 +117,17 @@ public class RestClient implements Closeable {
     return map.get(string);
   }
 
-  public void addToIndex(String index, List<Object> values) throws IOException {
-    // TODO: add bulk support
-    for (Object object : values) {
-      create(index, mapper.writeValueAsBytes(object));
-    }
+  public void bulk(String index, byte[] buffer, int bufferSize) throws IOException {
+    PostMethod post = new PostMethod(index + "/_bulk");
+    post.setRequestEntity(new JsonByteArrayRequestEntity(buffer, bufferSize));
+    post.setContentChunked(false);
+    execute(post);
   }
 
   private void create(String q, byte[] value) throws IOException {
-    PostMethod put = new PostMethod(q);
-    put.setRequestEntity(new ByteArrayRequestEntity(value));
-    execute(put);
+    PostMethod post = new PostMethod(q);
+    post.setRequestEntity(new ByteArrayRequestEntity(value));
+    execute(post);
   }
 
   public void deleteIndex(String index) throws IOException {

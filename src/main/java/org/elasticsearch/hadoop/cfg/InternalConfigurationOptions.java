@@ -13,20 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.rest;
-
-import org.elasticsearch.hadoop.TestSettings;
-import org.elasticsearch.hadoop.cfg.Settings;
-import org.junit.Test;
+package org.elasticsearch.hadoop.cfg;
 
 /**
+ * Property names for internal framework use. They will show up inside the Hadoop configuration or Cascading properties (which act as a distributing support) but not in the API.
  */
-public abstract class RestTest {
+interface InternalConfigurationOptions extends ConfigurationOptions {
 
-    private RestClient client = new RestClient(new TestSettings());
-
-    @Test
-    public void testPagination() throws Exception {
-        client.query("twitter/_search?q=kimchy", 0, 2);
-    }
+    static final String INTERNAL_ES_TARGET_RESOURCE = "es.internal.mr.target.resource";
+    static final String INTERNAL_ES_TARGET_URI = "es.internal.mr.target.uri";
 }
