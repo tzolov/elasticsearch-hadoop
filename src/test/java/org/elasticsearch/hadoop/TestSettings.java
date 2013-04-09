@@ -30,13 +30,7 @@ public class TestSettings extends PropertiesSettings {
         TESTING_PROPS.put(ES_BATCH_SIZE_BYTES, "8kb");
     }
 
-<<<<<<< HEAD:src/main/java/org/elasticsearch/hadoop/mr/ESConfigConstants.java
-    public static final String ES_ADDRESS = "es.address";
-    
-    public static final String ES_OBJECTMAPPER_CLASS = "es.objectmapper.class";
-=======
     public TestSettings() {
         super(TESTING_PROPS);
     }
->>>>>>> upstream/master:src/test/java/org/elasticsearch/hadoop/TestSettings.java
 }
