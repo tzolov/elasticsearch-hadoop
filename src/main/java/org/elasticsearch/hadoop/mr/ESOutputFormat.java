@@ -18,6 +18,7 @@ package org.elasticsearch.hadoop.mr;
 import java.io.IOException;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.Validate;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.mapred.JobConf;
@@ -27,13 +28,15 @@ import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.util.Progressable;
+import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
+import org.elasticsearch.hadoop.cfg.Settings;
+import org.elasticsearch.hadoop.cfg.SettingsManager;
 import org.elasticsearch.hadoop.rest.BufferedRestClient;
-import org.elasticsearch.hadoop.util.ConfigUtils;
 
 /**
  * ElasticSearch {@link OutputFormat} (old and new API) for adding data to an index inside ElasticSearch.
  */
-public class ESOutputFormat extends OutputFormat<Object, Object> implements org.apache.hadoop.mapred.OutputFormat<Object, Object>, ESConfigConstants {
+public class ESOutputFormat extends OutputFormat<Object, Object> implements org.apache.hadoop.mapred.OutputFormat<Object, Object>, ConfigurationOptions {
 
     // don't use mapred.OutputCommitter as it performs mandatory casts to old API resulting in CCE
     public static class ESOutputCommitter extends org.apache.hadoop.mapreduce.OutputCommitter {
@@ -67,17 +70,15 @@ public class ESOutputFormat extends OutputFormat<Object, Object> implements org.
 
     protected static class ESRecordWriter extends RecordWriter<Object, Object> implements org.apache.hadoop.mapred.RecordWriter<Object, Object> {
 
-        private final String index;
         private final BufferedRestClient client;
 
         public ESRecordWriter(Configuration cfg) {
-            index = cfg.get(ES_INDEX);
-            client = new BufferedRestClient(ConfigUtils.detectHostPortAddress(cfg));
+            client = new BufferedRestClient(SettingsManager.loadFrom(cfg));
         }
 
         @Override
         public void write(Object key, Object value) throws IOException {
-            client.addToIndex(index, value);
+            client.addToIndex(value);
         }
 
         @Override
@@ -119,8 +120,8 @@ public class ESOutputFormat extends OutputFormat<Object, Object> implements org.
 
     @Override
     public void checkOutputSpecs(FileSystem ignored, JobConf cfg) {
-        if (StringUtils.isBlank(cfg.get(ES_INDEX))) {
-            throw new IllegalStateException("no ElasticSearch index specified ('es.mr.index' property)");
-        }
+        Settings settings = SettingsManager.loadFrom(cfg);
+
+        Validate.notEmpty(settings.getTargetResource(), String.format("No resource ['%s'] (index/query/location) specified", ES_RESOURCE));
     }
 }

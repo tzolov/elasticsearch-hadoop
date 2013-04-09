@@ -27,9 +27,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.elasticsearch.hadoop.mr.ESConfigConstants;
+import org.elasticsearch.hadoop.cfg.SettingsManager;
 import org.elasticsearch.hadoop.mr.ESOutputFormat;
-import org.elasticsearch.hadoop.util.ConfigUtils;
 
 import com.google.common.base.Objects;
 
@@ -90,8 +89,7 @@ public class ESTarget implements MapReduceTarget {
     FileOutputFormat.setOutputPath(job, outputPath);
 
     Configuration conf = job.getConfiguration();
-    conf.set(ESConfigConstants.ES_ADDRESS, ConfigUtils.detectHostPortAddress(host, port, conf));
-    conf.set(ESConfigConstants.ES_INDEX, index.trim());
+    SettingsManager.loadFrom(conf).setHost(host).setPort(port).setResource(index).save();
 
     if (name == null) {
       job.setOutputFormatClass(ESOutputFormat.class);
