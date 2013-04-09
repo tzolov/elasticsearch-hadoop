@@ -119,7 +119,11 @@ public class ESInputFormat extends InputFormat<Text, MapWritable> implements
             size = esSplit.size;
 
             Settings settings = SettingsManager.loadFrom(cfg);
-            query = settings.getTargetResource();
+
+            // Issue #26 fix
+            //query = settings.getTargetResource(); 
+            query = settings.getProperty(ConfigurationOptions.ES_QUERY);
+            
             // initialize REST client
             client = new BufferedRestClient(settings);
         }

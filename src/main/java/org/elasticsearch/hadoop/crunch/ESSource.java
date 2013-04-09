@@ -27,6 +27,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
+import org.elasticsearch.hadoop.cfg.Settings;
 import org.elasticsearch.hadoop.cfg.SettingsManager;
 import org.elasticsearch.hadoop.mr.ESInputFormat;
 
@@ -76,18 +78,22 @@ public class ESSource implements Source<MapWritable> {
   @Override
   public void configureSource(Job job, int inputId) throws IOException {
 
-    Configuration conf = job.getConfiguration();
-
-    SettingsManager.loadFrom(conf).setHost(host).setPort(port).setResource(esQuery).save();
-    
     if (inputId == -1) {// single input
-      
+      Configuration conf = job.getConfiguration();
+
+//      Settings settings = SettingsManager.loadFrom(conf).setHost(host).setPort(port);
+          
+      conf.set(ConfigurationOptions.ES_HOST, host);
+      conf.set(ConfigurationOptions.ES_PORT, "" + port);
+      conf.set(ConfigurationOptions.ES_QUERY, esQuery);
+
       job.setInputFormatClass(ESInputFormat.class);
     } else { // multiple inputs
-      
-      FormatBundle<ESInputFormat> inputBundle = FormatBundle.forInput(ESInputFormat.class);
-      //TODO check if this will work with the new ES SettingsManager
-      
+
+      FormatBundle<ESInputFormat> inputBundle = FormatBundle.forInput(ESInputFormat.class)
+          .set(ConfigurationOptions.ES_HOST, host).set(ConfigurationOptions.ES_PORT, "" + port)
+          .set(ConfigurationOptions.ES_QUERY, esQuery);
+
       Path dummy = new Path("/es/" + Base64.encodeBase64String(esQuery.getBytes()));
 
       CrunchInputs.addInputPath(job, dummy, inputBundle, inputId);

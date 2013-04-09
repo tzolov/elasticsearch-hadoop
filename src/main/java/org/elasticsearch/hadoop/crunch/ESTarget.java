@@ -27,6 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
 import org.elasticsearch.hadoop.cfg.SettingsManager;
 import org.elasticsearch.hadoop.mr.ESOutputFormat;
 
@@ -38,30 +39,30 @@ public class ESTarget implements MapReduceTarget {
 
   private String index;
   private String host = null;
-  private int port = -1 ;
+  private int port = -1;
 
   public ESTarget(String index) {
     this.index = index;
   }
 
   static class Builder {
-    
+
     private ESTarget esTarget;
 
     public Builder(String index) {
       esTarget = new ESTarget(index);
     }
-    
+
     public Builder setHost(String host) {
       esTarget.host = host;
       return this;
     }
-    
+
     public Builder setPort(int port) {
       esTarget.port = port;
       return this;
     }
-    
+
     public ESTarget build() {
       return esTarget;
     }
@@ -88,14 +89,20 @@ public class ESTarget implements MapReduceTarget {
 
     FileOutputFormat.setOutputPath(job, outputPath);
 
-    Configuration conf = job.getConfiguration();
-    SettingsManager.loadFrom(conf).setHost(host).setPort(port).setResource(index).save();
-
     if (name == null) {
+      Configuration conf = job.getConfiguration();
+
       job.setOutputFormatClass(ESOutputFormat.class);
       job.setOutputValueClass(ptype.getTypeClass());
+
+      conf.set(ConfigurationOptions.ES_HOST, host);
+      conf.set(ConfigurationOptions.ES_PORT, "" + port);
+      conf.set(ConfigurationOptions.ES_RESOURCE, index);
+
     } else {
-      FormatBundle<ESOutputFormat> bundle = FormatBundle.forOutput(ESOutputFormat.class);
+      FormatBundle<ESOutputFormat> bundle = FormatBundle.forOutput(ESOutputFormat.class)
+          .set(ConfigurationOptions.ES_HOST, host).set(ConfigurationOptions.ES_PORT, "" + port)
+          .set(ConfigurationOptions.ES_RESOURCE, index);
       CrunchOutputs.addNamedOutput(job, name, bundle, String.class, ptype.getTypeClass());
     }
   }
