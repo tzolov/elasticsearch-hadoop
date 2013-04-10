@@ -216,11 +216,9 @@ public class MyJsonOutputSchema implements Writable, Serializable {
 ```
 This class is mapped into the following JSON format:
 ```JSON
-...
   _source: {
     userName: "Crunch user"
   }
-...
 ```
 
 # Building the source

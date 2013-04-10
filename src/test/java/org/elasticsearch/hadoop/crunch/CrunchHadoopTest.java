@@ -120,11 +120,11 @@ public class CrunchHadoopTest implements Serializable {
   public void testWritesToESAndReadFromES() {
 
     testWritesToES();
-    
+
     // Refresh the radio index created in testWritesToES() to make it available
     // for searching
     esServer.refresIndex("radio");
-    
+
     testReadFromES();
   }
 

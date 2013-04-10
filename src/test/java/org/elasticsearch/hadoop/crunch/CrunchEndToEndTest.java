@@ -21,6 +21,9 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
@@ -32,11 +35,16 @@ import org.apache.crunch.types.writable.WritableTypeFamily;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
 import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.search.SearchHit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 /**
  * This application reads from ES an existing index of tweets (/twitter/tweet),
@@ -82,6 +90,10 @@ public class CrunchEndToEndTest implements Serializable {
   @Test
   public void testESSourceAndESTarget() throws InterruptedException {
 
+    // Ensure the test index is initialized
+    assertEquals("Missing test index: 'twitter/tweet'", 3,
+        esServer.getClient().prepareCount("twitter").setTypes("tweet").execute().actionGet().count());
+
     // NOTE: The AvroTypeFamily is not supported yet.
     WritableTypeFamily tf = WritableTypeFamily.getInstance();
 
@@ -119,13 +131,29 @@ public class CrunchEndToEndTest implements Serializable {
     // (http://localhost:9200/twitter/count/_search?q=*)
     pipeline.write(esUserTweetCount, new ESTarget.Builder("twitter/count").setHost("localhost").setPort(9200).build());
 
+    // 6. Execute the pipeline
     boolean succeeded = pipeline.done().succeeded();
 
-    assertTrue(succeeded);
+    assertTrue("Pipeline exectuion has failed!", succeeded);
 
+    // Refresh the 'twitter' index to ensure it is available for querying.
     esServer.refresIndex("twitter");
 
     assertEquals(3, esServer.getClient().prepareCount("twitter").setTypes("tweet").execute().actionGet().count());
-    assertEquals(2, esServer.getClient().prepareCount("twitter").setTypes("count").execute().actionGet().count());
+    assertEquals("Missing result index: 'twitter/cont'", 2,
+        esServer.getClient().prepareCount("twitter").setTypes("count").execute().actionGet().count());
+
+    HashSet<SearchHit> resultCountIndex = Sets.newHashSet(esServer.getClient().prepareSearch("twitter")
+        .setTypes("count").execute().actionGet().getHits().iterator());
+
+    assertEquals("Result should contain 2 hits!", 2, resultCountIndex.size());
+    
+    HashSet<String> expecteCountIndex = Sets.newHashSet("{\"userName\":\"tzolov\",\"tweetCount\":1}",
+        "{\"userName\":\"crunch\",\"tweetCount\":2}");
+
+
+    for (SearchHit hit : resultCountIndex) {
+      assertTrue(expecteCountIndex.contains(hit.getSourceAsString()));
+    }
   }
 }
