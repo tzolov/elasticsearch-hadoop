@@ -15,7 +15,14 @@
  */
 package org.elasticsearch.hadoop.crunch;
 
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
+
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.concurrent.ExecutionException;
+
+import junit.framework.Assert;
 
 import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
@@ -26,13 +33,17 @@ import org.apache.crunch.lib.Aggregate;
 import org.apache.crunch.types.writable.WritableTypeFamily;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.node.Node;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * Sample application that reads a tweeter index from ES, uses Crunch to count
  * the number of tweets per user and write the result back to ES in a different
  * index type.
  * 
- * <br/>
  * <br/>
  * 
  * Prerequisites:
@@ -41,15 +52,37 @@ import org.apache.hadoop.io.Text;
  * 
  * <li>Start ElasticSerach node accessible at: http://localhost:9200</li>
  * 
- * <li>Create sample twitter index as explained here:
- * https://github.com/elasticsearch/elasticsearch#indexing. <br/>
- * Check the index: http://localhost:9200/twitter/tweet/_search?q=*</li>
- * 
  * @author (Christian Tzolov) tzolov@apache.org
  */
 public class ESCrunchIntegartionTest implements Serializable {
 
-  // @Test
+  transient private static Node node;
+  transient private static Client client;
+
+  @BeforeClass
+  public static void before() throws IOException, InterruptedException, ExecutionException {
+    node = nodeBuilder().client(false).node();
+    client = node.client();
+
+//    client.admin().indices().prepareCreate("twitter").execute().actionGet();
+    client.prepareIndex("twitter", "tweet", "1")
+        .setSource(jsonBuilder().startObject().field("user", "kimchy").field("message", "hellow1").endObject())
+        .execute().actionGet();
+    client.prepareIndex("twitter", "tweet", "2")
+        .setSource(jsonBuilder().startObject().field("user", "kimchy").field("message", "hellow2").endObject())
+        .execute().actionGet();
+    client.prepareIndex("twitter", "tweet", "3")
+        .setSource(jsonBuilder().startObject().field("user", "tzolov").field("message", "hellow3").endObject())
+        .execute().actionGet();
+  }
+
+  @AfterClass
+  public static void after() {
+    client.admin().indices().prepareDelete("twitter").execute().actionGet();
+    node.close();
+  }
+
+  @Test
   public void testESSourceAndESTarget() throws InterruptedException {
 
     // NOTE: The AvroTypeFamily is not supported yet.
@@ -86,12 +119,12 @@ public class ESCrunchIntegartionTest implements Serializable {
 
     // 5. Write the result into ('twitter/count') ES index type. Check the
     // result: http://localhost:9200/twitter/count/_search?q=*
-    pipeline.write(esUserTweetCount, new ESTarget.Builder("twitter/count/").setHost("localhost").setPort(9200).build());
+    pipeline.write(esUserTweetCount, new ESTarget.Builder("twitter/count").setHost("localhost").setPort(9200).build());
 
     pipeline.done();
-  }
 
-  public static void main(String[] args) throws InterruptedException {
-    new ESCrunchIntegartionTest().testESSourceAndESTarget();
+    Assert.assertEquals(3, client.prepareCount("twitter").setTypes("tweet").execute().actionGet().count());
+    Assert.assertEquals(2, client.prepareCount("twitter").setTypes("count").execute().actionGet().count());
+//    System.out.println(client.prepareGet().setIndex("twitter").setType("count").setFields("userName").execute().actionGet());
   }
 }

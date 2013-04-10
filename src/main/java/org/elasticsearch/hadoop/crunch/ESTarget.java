@@ -28,7 +28,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
-import org.elasticsearch.hadoop.cfg.SettingsManager;
 import org.elasticsearch.hadoop.mr.ESOutputFormat;
 
 import com.google.common.base.Objects;
@@ -38,8 +37,8 @@ public class ESTarget implements MapReduceTarget {
   private static final Log LOG = LogFactory.getLog(ESTarget.class);
 
   private String index;
-  private String host = null;
-  private int port = -1;
+  private String host = "localhost";
+  private int port = 9200;
 
   public ESTarget(String index) {
     this.index = index;

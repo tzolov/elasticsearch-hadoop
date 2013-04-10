@@ -28,8 +28,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
-import org.elasticsearch.hadoop.cfg.Settings;
-import org.elasticsearch.hadoop.cfg.SettingsManager;
 import org.elasticsearch.hadoop.mr.ESInputFormat;
 
 import com.google.common.base.Objects;
@@ -39,8 +37,8 @@ public class ESSource implements Source<MapWritable> {
   private PType<MapWritable> ptype;
   private String esQuery;
 
-  private String host = null;
-  private int port = -1;
+  private String host = "localhost";
+  private int port = 9200;
 
   public ESSource(String esQuery) {
     this.ptype = Writables.writables(MapWritable.class);

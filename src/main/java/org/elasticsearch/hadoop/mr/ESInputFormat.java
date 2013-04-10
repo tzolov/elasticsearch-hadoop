@@ -123,7 +123,9 @@ public class ESInputFormat extends InputFormat<Text, MapWritable> implements
             // Issue #26 fix
             //query = settings.getTargetResource(); 
             query = settings.getProperty(ConfigurationOptions.ES_QUERY);
-            
+            if (query == null) {
+              query = settings.getTargetResource(); 
+            }
             // initialize REST client
             client = new BufferedRestClient(settings);
         }
