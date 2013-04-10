@@ -173,13 +173,12 @@ ES-Hadoop provides ElasticSearch [Source][] (`ESSource`) and [Target][] (`ESTarg
 Note: The Crunch AvroTypeFamily is not supported yet! 
 ```
 
-Sample annotated application is available at: [ESCrunchIntegartionTest][].
+Sample annotated application is available at: [CrunchEndToEndTest][].
 
 ### Reading
 ```java
 MRPipeline pipeline = new MRPipeline(...);
-ESSource esSource =  new ESSource.Builder("twitter/tweet/_search?q=user:*")
-									.setHost("localhost").setPort(9200).build();
+ESSource esSource =  new ESSource.Builder("twitter/tweet/_search?q=user:*").build();
 PCollection<MapWritable> tweets = pipeline.read(esSource);
 ...
 ```
@@ -190,7 +189,7 @@ method to retrieve a particular attribute value.
 ### Writing
 ```java
 PCollection<MyJsonOutputSchema> myJsonOutputCollection = ...
-ESTarget esTarget = new ESTarget.Builder("twitter/count/").setHost("localhost").setPort(9200).build();
+ESTarget esTarget = new ESTarget.Builder("twitter/count/").build();
 pipeline.write(myJsonOutputCollection, esTarget);
 ```
 This approach relies on Jackson's `ObjectMapper` serialization (inside the `RestClient`) to convert the output Crunch 
@@ -252,4 +251,4 @@ and install it in your local Maven repository:
 [Crunch]: http://crunch.apache.org
 [Source]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/Source.html
 [Target]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/Target.html
-[ESCrunchIntegartionTest]: https://github.com/tzolov/elasticsearch-hadoop/blob/master/src/test/java/org/elasticsearch/hadoop/crunch/ESCrunchIntegartionTest.java
+[CrunchEndToEndTest]: https://github.com/tzolov/elasticsearch-hadoop/blob/master/src/test/java/org/elasticsearch/hadoop/crunch/CrunchEndToEndTest.java

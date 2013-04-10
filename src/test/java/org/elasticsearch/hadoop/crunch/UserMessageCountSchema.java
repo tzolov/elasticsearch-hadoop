@@ -67,7 +67,7 @@ public class UserMessageCountSchema implements Writable, Serializable {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this).add("user", userName).add("tweet_count", tweetCount).toString();
+    return Objects.toStringHelper(this).add("user", userName).add("tweetCount", tweetCount).toString();
   }
 
   @Override
