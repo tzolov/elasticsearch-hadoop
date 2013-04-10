@@ -68,7 +68,7 @@ dependencies {
     // specify a version of antlr that works with both hive and pig (works only during compilation)
     testRuntime "org.antlr:antlr-runtime:$antlrVersion"
     
-    testRuntime "org.elasticsearch:elasticsearch:0.20.6"
+    testCompile("org.elasticsearch:elasticsearch:0.20.6")
 }
 
 configurations.all {
