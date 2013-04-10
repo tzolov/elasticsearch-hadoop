@@ -63,8 +63,8 @@ public class CrunchEndToEndTest implements Serializable {
 
     Client client = esServer.getClient();
 
-    // Create 3 tweets in the following format: {"user":"user name", "message":
-    // "some text"}.
+    // Create new index (twitter) with 3 tweets in the following format:
+    // {"user":"user name", "message":"some text"}.
     client.prepareIndex("twitter", "tweet", "1").setSource(createTweet("crunch", "message one")).execute().actionGet();
     client.prepareIndex("twitter", "tweet", "2").setSource(createTweet("crunch", "message two")).execute().actionGet();
     client.prepareIndex("twitter", "tweet", "3").setSource(createTweet("tzolov", "message three")).execute()
@@ -87,8 +87,7 @@ public class CrunchEndToEndTest implements Serializable {
   public void testESSourceAndESTarget() throws InterruptedException {
 
     // Ensure the test index is initialized
-    assertEquals("Missing test index: 'twitter/tweet'", 3,
-        esServer.getClient().prepareCount("twitter").setTypes("tweet").execute().actionGet().count());
+    assertEquals("Missing test index: 'twitter/tweet'", 3, esServer.countIndex("twitter", "tweet"));
 
     // NOTE: The AvroTypeFamily is not supported yet.
     WritableTypeFamily tf = WritableTypeFamily.getInstance();
