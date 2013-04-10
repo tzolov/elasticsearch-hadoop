@@ -16,14 +16,16 @@
 package org.elasticsearch.hadoop.crunch;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 import static org.apache.crunch.types.writable.Writables.records;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.crunch.DoFn;
 import org.apache.crunch.Emitter;
 import org.apache.crunch.MapFn;
@@ -44,65 +46,7 @@ import com.google.common.collect.Lists;
  * Prerequisite: <li>Install Crunch:0.6.0-SNAPSHOT in your local Maven
  * repository.</li>
  */
-public class CrunchHadoopTest implements Serializable {
-
-  static class Artist implements Writable, Serializable {
-    private String name;
-    private String url;
-    private String picture;
-
-    public Artist(String name, String url, String picture) {
-      this.name = name;
-      this.url = url;
-      this.picture = picture;
-    }
-
-    public Artist() {
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public String getUrl() {
-      return url;
-    }
-
-    public String getPicture() {
-      return picture;
-    }
-
-    public void setName(String name) {
-      this.name = name;
-    }
-
-    public void setUrl(String url) {
-      this.url = url;
-    }
-
-    public void setPicture(String picture) {
-      this.picture = picture;
-    }
-
-    @Override
-    public void readFields(DataInput in) throws IOException {
-      name = in.readUTF();
-      url = in.readUTF();
-      picture = in.readUTF();
-    }
-
-    @Override
-    public void write(DataOutput out) throws IOException {
-      out.writeUTF(name);
-      out.writeUTF(url);
-      out.writeUTF(picture);
-    }
-
-    @Override
-    public String toString() {
-      return Objects.toStringHelper(Artist.class).add("name", name).add("url", url).add("pic", picture).toString();
-    }
-  }
+public class CrunchReadWriteTest implements Serializable {
 
   transient private static EmbeddedElasticsearchServer esServer;
 
@@ -121,39 +65,45 @@ public class CrunchHadoopTest implements Serializable {
 
     testWritesToES();
 
-    // Refresh the radio index created in testWritesToES() to make it available
-    // for searching
-    esServer.refresIndex("radio");
-
     testReadFromES();
   }
 
   private void testWritesToES() {
 
-    MRPipeline pipeline = new MRPipeline(CrunchHadoopTest.class);
-
+    MRPipeline pipeline = new MRPipeline(CrunchReadWriteTest.class);
+    
     PCollection<Artist> artists = pipeline.read(From.textFile("src/test/resources/artists.dat")).parallelDo(
-        new DoFn<String, Artist>() {
+        "Convet input lines into Artist instances", new DoFn<String, Artist>() {
 
           @Override
           public void process(String line, Emitter<Artist> emitter) {
+
             String[] fields = line.split("\\t");
+
             if (fields.length == 4) {
               emitter.emit(new Artist(fields[1], fields[2], fields[3]));
             } else {
-              System.out.println("bogus line:" + line);
+              System.out.println("Skip bogus line: " + line);
             }
           }
         }, records(Artist.class));
 
-    pipeline.write(artists, new ESTarget.Builder("radio/artists").build());
+    pipeline.write(artists, new ESTarget("radio/artists"));
 
-    pipeline.done();
+    boolean succeeded = pipeline.done().succeeded();
+
+    assertTrue(succeeded);
+
+    // Refresh the radio index created in testWritesToES() to make it available
+    // for searching
+    esServer.refresIndex("radio");
+
+    assertEquals(987, esServer.countIndex("radio", "artists"));
   }
 
   private void testReadFromES() {
 
-    MRPipeline pipeline = new MRPipeline(CrunchHadoopTest.class);
+    MRPipeline pipeline = new MRPipeline(CrunchReadWriteTest.class);
 
     Iterable<Artist> artists = pipeline.read(new ESSource("radio/artists/_search?q=me*"))
         .parallelDo(new MapFn<MapWritable, Artist>() {
@@ -166,10 +116,6 @@ public class CrunchHadoopTest implements Serializable {
           }
         }, records(Artist.class)).materialize();
 
-    ArrayList<Artist> artistList = Lists.newArrayList(artists);
-
-    assertEquals(15, artistList.size());
-
-    pipeline.done();
+    assertEquals(15, Lists.newArrayList(artists).size());
   }
 }

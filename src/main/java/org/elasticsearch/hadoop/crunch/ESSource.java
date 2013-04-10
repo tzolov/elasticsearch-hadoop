@@ -77,15 +77,15 @@ public class ESSource implements Source<MapWritable> {
   public void configureSource(Job job, int inputId) throws IOException {
 
     if (inputId == -1) {// single input
+      
       Configuration conf = job.getConfiguration();
 
-//      Settings settings = SettingsManager.loadFrom(conf).setHost(host).setPort(port);
-          
       conf.set(ConfigurationOptions.ES_HOST, host);
       conf.set(ConfigurationOptions.ES_PORT, "" + port);
       conf.set(ConfigurationOptions.ES_QUERY, esQuery);
 
       job.setInputFormatClass(ESInputFormat.class);
+       
     } else { // multiple inputs
 
       FormatBundle<ESInputFormat> inputBundle = FormatBundle.forInput(ESInputFormat.class)

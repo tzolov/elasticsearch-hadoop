@@ -2,9 +2,11 @@ package org.elasticsearch.hadoop.crunch;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.apache.commons.io.FileUtils;
 import org.elasticsearch.node.Node;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -45,9 +47,16 @@ public class EmbeddedElasticsearchServer {
       throw new RuntimeException("Could not delete data directory of embedded elasticsearch server", e);
     }
   }
-  
+
   public void refresIndex(String indexName) {
     new RefreshRequestBuilder(getClient().admin().indices()).setIndices(indexName).execute().actionGet();
   }
 
+  public long countIndex(String indexName, String typeName) {
+    return getClient().prepareCount(indexName).setTypes(typeName).execute().actionGet().count();
+  }
+
+  public Iterator<SearchHit> searchIndex(String indexName, String typeName) {
+    return getClient().prepareSearch(indexName).setTypes(typeName).execute().actionGet().getHits().iterator();
+  }
 }

@@ -46,7 +46,7 @@ public class ESTarget implements MapReduceTarget {
 
   static class Builder {
 
-    private ESTarget esTarget;
+    private ESTarget esTarget;  
 
     public Builder(String index) {
       esTarget = new ESTarget(index);

@@ -21,9 +21,7 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 
 import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
@@ -35,7 +33,6 @@ import org.apache.crunch.types.writable.WritableTypeFamily;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
 import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.search.SearchHit;
@@ -43,7 +40,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 /**
@@ -139,18 +135,14 @@ public class CrunchEndToEndTest implements Serializable {
     // Refresh the 'twitter' index to ensure it is available for querying.
     esServer.refresIndex("twitter");
 
-    assertEquals(3, esServer.getClient().prepareCount("twitter").setTypes("tweet").execute().actionGet().count());
-    assertEquals("Missing result index: 'twitter/cont'", 2,
-        esServer.getClient().prepareCount("twitter").setTypes("count").execute().actionGet().count());
+    assertEquals(3, esServer.countIndex("twitter", "tweet"));
+    assertEquals("Missing result index: 'twitter/cont'", 2, esServer.countIndex("twitter", "count"));
 
-    HashSet<SearchHit> resultCountIndex = Sets.newHashSet(esServer.getClient().prepareSearch("twitter")
-        .setTypes("count").execute().actionGet().getHits().iterator());
-
+    HashSet<SearchHit> resultCountIndex = Sets.newHashSet(esServer.searchIndex("twitter", "count"));
     assertEquals("Result should contain 2 hits!", 2, resultCountIndex.size());
-    
+
     HashSet<String> expecteCountIndex = Sets.newHashSet("{\"userName\":\"tzolov\",\"tweetCount\":1}",
         "{\"userName\":\"crunch\",\"tweetCount\":2}");
-
 
     for (SearchHit hit : resultCountIndex) {
       assertTrue(expecteCountIndex.contains(hit.getSourceAsString()));
