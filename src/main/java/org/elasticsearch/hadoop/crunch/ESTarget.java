@@ -44,7 +44,7 @@ public class ESTarget implements MapReduceTarget {
     this.index = index;
   }
 
-  static class Builder {
+  public static class Builder {
 
     private ESTarget esTarget;  
 

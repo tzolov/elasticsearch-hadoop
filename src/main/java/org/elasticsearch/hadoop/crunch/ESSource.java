@@ -45,7 +45,7 @@ public class ESSource implements Source<MapWritable> {
     this.esQuery = esQuery;
   }
 
-  static class Builder {
+  public static class Builder {
 
     private ESSource esSource;
 
