@@ -19,8 +19,10 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.commons.lang.Validate;
+import org.apache.hadoop.io.Writable;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.elasticsearch.hadoop.cfg.Settings;
+import org.elasticsearch.hadoop.util.WritableUtils;
 
 /**
  * Rest client performing high-level operations using buffers to improve performance. Stateful in that once created, it is used to perform updates against the same index.
@@ -40,6 +42,7 @@ public class BufferedRestClient implements Closeable {
     private String index;
 
     public BufferedRestClient(Settings settings) {
+      //    mapper.getSerializationConfig().disable(SerializationConfig.Feature.FAIL_ON_EMPTY_BEANS);      
         this.client = new RestClient(settings);
         this.index = settings.getTargetResource();
 
@@ -69,7 +72,11 @@ public class BufferedRestClient implements Closeable {
         StringBuilder sb = new StringBuilder();
 
         sb.append("{\"index\":{}}\n");
-        sb.append(mapper.writeValueAsString(object));
+        if (object instanceof String) {
+          sb.append(object);
+        } else {
+          sb.append(mapper.writeValueAsString(object));
+        }
         sb.append("\n");
 
         byte[] data = sb.toString().getBytes("UTF-8");
