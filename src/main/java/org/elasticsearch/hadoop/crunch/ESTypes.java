@@ -31,6 +31,9 @@ public class ESTypes {
     public T map(MapWritable input) {
       try {        
         String valueAsString = mapper.writeValueAsString(WritableUtils.fromWritable(input));
+        if (clazz.isAssignableFrom(String.class)) {
+          return (T) valueAsString;
+        }
         return mapper.readValue(valueAsString, clazz);
       } catch (Exception e) {
         throw new CrunchRuntimeException(e);

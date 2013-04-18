@@ -36,7 +36,7 @@ public class ESTypedSource<T> implements Source<T> {
   private PType<T> ptype;
   private String esQuery;
 
-  private String host = "localhost";
+  private String host = "localhost"; 
   private int port = 9200;
 
   public ESTypedSource(String esQuery, Class<T> classType) {

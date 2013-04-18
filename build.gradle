@@ -61,14 +61,14 @@ dependencies {
     // Testing
     testCompile "junit:junit:$junitVersion"
 	testCompile "org.hamcrest:hamcrest-all:$hamcrestVersion"
-    
+    testCompile "org.elasticsearch:elasticsearch:$esVersion"
+	
 	// Required by Pig
 	testRuntime "com.google.guava:guava:11.0"
 	testRuntime "dk.brics.automaton:automaton:1.11-8"
     // specify a version of antlr that works with both hive and pig (works only during compilation)
     testRuntime "org.antlr:antlr-runtime:$antlrVersion"
     
-    testCompile("org.elasticsearch:elasticsearch:0.20.6")
     testCompile("org.apache.avro:avro:1.7.0")    
 }
 
@@ -81,15 +81,15 @@ configurations.all {
 sourceCompatibility = 1.6
 targetCompatibility = 1.6 
 
-ext.skipPig = true
+ext.skipCascading = true
 ext.skipHive = true
+ext.skipPig = true
 
-task enablePigTests {
-    description = "Enable Pig tests"
+task enableCascadingTests {
+    description = "Enable Cascading tests"
     group = "Verification"
-    
     doLast() {
-        project.ext.skipPig = false
+        project.ext.skipCascading = false
    }
 }
 
@@ -98,23 +98,36 @@ task enableHiveTests {
     group = "Verification"
     doLast() {
         project.ext.skipHive = false
+		project.ext.skipPig = true
    }
 }
 
-task enableAllTests() {
-    description = "Enable all (incl. Pig, Hive) tests"
+task enablePigTests {
+    description = "Enable Pig tests"
+    group = "Verification"
+    
+    doLast() {
+        project.ext.skipPig = false
+		project.ext.skipHive = true
+   }
+}
+
+task enableIntegrationTests() {
+    description = "Enable all integration tests"
     group = "Verification"
     doFirst() {
-      println "Enable all tests"
+      println "Enable all integration tests"
+  	  project.ext.skipCascading = false
+	  // Hive and Pig are not compatible
+      project.ext.skipHive = true
       project.ext.skipPig = false
-      project.ext.skipHive = false
     }
 }
 
 test {
     systemProperties['input.path'] = 'build/classes/test/input'
     systemProperties['output.path'] = 'build/classes/test/output'
-    includes = ["**/*.class"]
+    includes = ["org/elasticsearch/hadoop/unit/**/*.class", "org/elasticsearch/hadoop/integration/**/*Suite.class"]
 
     testLogging {
         events "started"
@@ -122,16 +135,21 @@ test {
         maxGranularity 2
     }
 
+	
     doFirst() {
         ext.msg = ""
         
-        if (skipPig) {
-            ext.msg += "Pig "
-            excludes.add("**/pig/**")
+        if (skipCascading) {
+            ext.msg += "Cascading "
+            excludes.add("**/cascading/**")
         }
         if (skipHive) {
             ext.msg += "Hive "
             excludes.add("**/hive/**")
+        }
+        if (skipPig) {
+            ext.msg += "Pig"
+            excludes.add("**/pig/**")
         }
 
         if (!msg.isEmpty())
