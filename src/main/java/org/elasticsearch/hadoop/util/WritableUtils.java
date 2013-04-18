@@ -154,6 +154,7 @@ public abstract class WritableUtils {
             for (Writable wrt : writables) {
                 list.add(fromWritable(wrt));
             }
+            return list;
         }
         else if (writable instanceof AbstractMapWritable) {
             Map<Writable, Writable> smap = (Map) writable;
@@ -175,6 +176,7 @@ public abstract class WritableUtils {
             return map;
         }
         // fall-back to bytearray
-        return org.apache.hadoop.io.WritableUtils.toByteArray(writable);
+        //return org.apache.hadoop.io.WritableUtils.toByteArray(writable);
+        return writable;
     }
 }
