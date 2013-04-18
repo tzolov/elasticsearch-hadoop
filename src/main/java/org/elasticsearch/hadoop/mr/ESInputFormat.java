@@ -120,8 +120,7 @@ public class ESInputFormat extends InputFormat<Text, MapWritable> implements
 
             Settings settings = SettingsManager.loadFrom(cfg);
 
-            // Issue #26 fix
-            //query = settings.getTargetResource(); 
+            // FIX for issue #26
             query = settings.getProperty(ConfigurationOptions.ES_QUERY);
             if (query == null) {
               query = settings.getTargetResource(); 

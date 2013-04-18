@@ -17,9 +17,12 @@ package org.elasticsearch.hadoop.mr;
 
 import java.io.IOException;
 
+import org.apache.avro.mapred.AvroWrapper;
 import org.apache.commons.lang.Validate;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapreduce.JobContext;
@@ -31,6 +34,7 @@ import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
 import org.elasticsearch.hadoop.cfg.Settings;
 import org.elasticsearch.hadoop.cfg.SettingsManager;
 import org.elasticsearch.hadoop.rest.BufferedRestClient;
+import org.elasticsearch.hadoop.util.WritableUtils;
 
 /**
  * ElasticSearch {@link OutputFormat} (old and new API) for adding data to an index inside ElasticSearch.
@@ -77,50 +81,58 @@ public class ESOutputFormat extends OutputFormat<Object, Object> implements org.
 
         @Override
         public void write(Object key, Object value) throws IOException {
+          // handle avro serialization
+          if (key instanceof AvroWrapper && (value == null || value instanceof NullWritable)) {
+            key = ((AvroWrapper) key).datum().toString(); //TODO check the DatumWriter?
+            client.addToIndex(key);
+          } else if (value instanceof Writable) {
+            client.addToIndex(WritableUtils.fromWritable((Writable)value));
+          } else {
             client.addToIndex(value);
+          }
         }
 
         @Override
         public void close(TaskAttemptContext context) throws IOException {
-            close((Reporter) null);
+          close((Reporter) null);
         }
-
+    
         @Override
         public void close(Reporter reporter) throws IOException {
-            client.close();
+          client.close();
         }
     }
 
-    //
-    // new API - just delegates to the Old API
-    //
-    @Override
-    public ESRecordWriter getRecordWriter(TaskAttemptContext context) {
-        return getRecordWriter(null, (JobConf) context.getConfiguration(), null, context);
-    }
+  //
+  // new API - just delegates to the Old API
+  //
+  @Override
+  public ESRecordWriter getRecordWriter(TaskAttemptContext context) {
+    return getRecordWriter(null, (JobConf) context.getConfiguration(), null, context);
+  }
 
-    @Override
-    public void checkOutputSpecs(JobContext context) {
-        checkOutputSpecs(null, (JobConf) context.getConfiguration());
-    }
+  @Override
+  public void checkOutputSpecs(JobContext context) {
+    checkOutputSpecs(null, (JobConf) context.getConfiguration());
+  }
 
-    @Override
-    public org.apache.hadoop.mapreduce.OutputCommitter getOutputCommitter(TaskAttemptContext context) {
-        return new ESOutputCommitter();
-    }
+  @Override
+  public org.apache.hadoop.mapreduce.OutputCommitter getOutputCommitter(TaskAttemptContext context) {
+    return new ESOutputCommitter();
+  }
 
-    //
-    // old API
-    //
-    @Override
-    public ESRecordWriter getRecordWriter(FileSystem ignored, JobConf job, String name, Progressable progress) {
-        return new ESRecordWriter(job);
-    }
+  //
+  // old API
+  //
+  @Override
+  public ESRecordWriter getRecordWriter(FileSystem ignored, JobConf job, String name, Progressable progress) {
+    return new ESRecordWriter(job);
+  }
 
-    @Override
-    public void checkOutputSpecs(FileSystem ignored, JobConf cfg) {
-        Settings settings = SettingsManager.loadFrom(cfg);
+  @Override
+  public void checkOutputSpecs(FileSystem ignored, JobConf cfg) {
+    Settings settings = SettingsManager.loadFrom(cfg);
 
-        Validate.notEmpty(settings.getTargetResource(), String.format("No resource ['%s'] (index/query/location) specified", ES_RESOURCE));
-    }
+    Validate.notEmpty(settings.getTargetResource(), String.format("No resource ['%s'] (index/query/location) specified", ES_RESOURCE));
+  }
 }

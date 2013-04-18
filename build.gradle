@@ -69,6 +69,7 @@ dependencies {
     testRuntime "org.antlr:antlr-runtime:$antlrVersion"
     
     testCompile("org.elasticsearch:elasticsearch:0.20.6")
+    testCompile("org.apache.avro:avro:1.7.0")    
 }
 
 configurations.all {
