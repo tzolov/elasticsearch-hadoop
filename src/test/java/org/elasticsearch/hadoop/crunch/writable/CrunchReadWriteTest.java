@@ -13,19 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.crunch;
+package org.elasticsearch.hadoop.crunch.writable;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static org.apache.crunch.types.writable.Writables.records;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.crunch.DoFn;
 import org.apache.crunch.Emitter;
 import org.apache.crunch.MapFn;
@@ -34,12 +29,14 @@ import org.apache.crunch.impl.mr.MRPipeline;
 import org.apache.crunch.io.From;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.Writable;
+import org.elasticsearch.hadoop.crunch.ESSource;
+import org.elasticsearch.hadoop.crunch.ESTarget;
+import org.elasticsearch.hadoop.crunch.writable.domain.Artist;
+import org.elasticsearch.hadoop.util.EmbeddedElasticsearchServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 
 /**

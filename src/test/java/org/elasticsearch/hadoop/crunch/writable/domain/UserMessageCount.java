@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.crunch;
+package org.elasticsearch.hadoop.crunch.writable.domain;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -33,18 +33,18 @@ import com.google.common.base.Objects;
  * Crunch's WritableTypeFamily. But because it is not used for any Hadoop
  * storage (only as meant to encode JSON in ES) the Writable methods are empty.
  */
-public class UserMessageCountSchema implements Writable, Serializable {
+public class UserMessageCount implements Writable, Serializable {
 
   private String userName;
 
   private long tweetCount;
 
-  public UserMessageCountSchema() {
+  public UserMessageCount() {
     this.userName = null;
     this.tweetCount = -1;
   }
 
-  public UserMessageCountSchema(String userName, long tweetCount) {
+  public UserMessageCount(String userName, long tweetCount) {
     this.userName = userName;
     this.tweetCount = tweetCount;
   }

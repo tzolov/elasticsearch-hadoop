@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.crunch;
+package org.elasticsearch.hadoop.crunch.writable;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
@@ -29,6 +29,9 @@ import org.apache.crunch.Emitter;
 import org.apache.crunch.PCollection;
 import org.apache.crunch.impl.mr.MRPipeline;
 import org.apache.crunch.io.From;
+import org.elasticsearch.hadoop.crunch.ESTarget;
+import org.elasticsearch.hadoop.crunch.writable.domain.Artist;
+import org.elasticsearch.hadoop.util.EmbeddedElasticsearchServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

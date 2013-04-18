@@ -1,4 +1,4 @@
-package org.elasticsearch.hadoop.crunch;
+package org.elasticsearch.hadoop.util;
 
 import java.io.File;
 import java.io.IOException;

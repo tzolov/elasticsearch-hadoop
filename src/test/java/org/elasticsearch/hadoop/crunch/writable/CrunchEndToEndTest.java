@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.crunch;
+package org.elasticsearch.hadoop.crunch.writable;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
@@ -22,6 +22,7 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashSet;
+import java.util.Map;
 
 import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
@@ -30,11 +31,14 @@ import org.apache.crunch.Pair;
 import org.apache.crunch.impl.mr.MRPipeline;
 import org.apache.crunch.lib.Aggregate;
 import org.apache.crunch.types.writable.WritableTypeFamily;
-import org.apache.hadoop.io.MapWritable;
-import org.apache.hadoop.io.Text;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.hadoop.crunch.ESTarget;
+import org.elasticsearch.hadoop.crunch.ESTypedSource;
+import org.elasticsearch.hadoop.crunch.ESTarget.Builder;
+import org.elasticsearch.hadoop.crunch.writable.domain.UserMessageCount;
+import org.elasticsearch.hadoop.util.EmbeddedElasticsearchServer;
 import org.elasticsearch.search.SearchHit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -83,59 +87,55 @@ public class CrunchEndToEndTest implements Serializable {
     esServer.shutdown();
   }
 
+  @SuppressWarnings({ "unchecked", "rawtypes" })
   @Test
   public void testESSourceAndESTarget() throws InterruptedException {
 
-    // Ensure the test index is initialized
     assertEquals("Missing test index: 'twitter/tweet'", 3, esServer.countIndex("twitter", "tweet"));
 
-    // NOTE: The AvroTypeFamily is not supported yet.
     WritableTypeFamily tf = WritableTypeFamily.getInstance();
 
-    // Create new Crunch pipeline
     MRPipeline pipeline = new MRPipeline(CrunchEndToEndTest.class);
 
-    // 1. Read all tweets from the 'twitter' ES index. The result is a
-    // collection of MapWritable elements - one element per ES 'source' object.
-    PCollection<MapWritable> tweets = pipeline.read(new ESSource.Builder("twitter/tweet/_search?q=user:*")
+    // 1. Query all tweets from ES 'twitter' index. The result is represented by
+    // collection of java.util.Map elements - one element per ES 'source'
+    // object.
+    PCollection<Map> tweets = pipeline.read(new ESTypedSource.Builder("twitter/tweet/_search?q=user:*", Map.class)
         .setHost("localhost").setPort(9200).build());
 
-    // 2. Extract the user names form the tweets.
-    PCollection<String> users = tweets.parallelDo(new MapFn<MapWritable, String>() {
+    // 2. Extract the user names from the tweet elements.
+    PCollection<String> users = tweets.parallelDo(new MapFn<Map, String>() {
       @Override
-      public String map(MapWritable inputMap) {
-        return inputMap.get(new Text("user")).toString();
+      public String map(Map tweet) {
+        return tweet.get("user").toString();
       }
     }, tf.strings());
 
-    // 3. Get the number of tweets per user: <user, msg count>
-    PTable<String, Long> numberOfTweetsPerUser = Aggregate.count(users);
+    // 3. Count the number of tweets per user.
+    PTable<String, Long> userTweetCount = Aggregate.count(users);
 
-    // 4. Convert the output into a format that can be serialized by ES into
-    // JSON format. Use a custom UserMessageCountSchema class to define the JSON
-    // format to be stored in ES.
-    PCollection<UserMessageCountSchema> esUserTweetCount = numberOfTweetsPerUser.parallelDo(
-        new MapFn<Pair<String, Long>, UserMessageCountSchema>() {
+    // 4. Transform the result into JSON serializable format.
+    // UserMessageCount defines the JSON format stored in ES
+    PCollection<UserMessageCount> esUserTweetCount = userTweetCount.parallelDo(
+        new MapFn<Pair<String, Long>, UserMessageCount>() {
           @Override
-          public UserMessageCountSchema map(Pair<String, Long> userToMessageCount) {
-            return new UserMessageCountSchema(userToMessageCount.first(), userToMessageCount.second());
+          public UserMessageCount map(Pair<String, Long> messageCount) {
+            return new UserMessageCount(messageCount.first(), messageCount.second());
           }
-        }, tf.records(UserMessageCountSchema.class));
+        }, tf.records(UserMessageCount.class));
 
     // 5. Write the result into ('twitter/count') ES index type.
     // (http://localhost:9200/twitter/count/_search?q=*)
     pipeline.write(esUserTweetCount, new ESTarget.Builder("twitter/count").setHost("localhost").setPort(9200).build());
 
     // 6. Execute the pipeline
-    boolean succeeded = pipeline.done().succeeded();
-
-    assertTrue("Pipeline exectuion has failed!", succeeded);
+    assertTrue("Pipeline exectuion has failed!", pipeline.done().succeeded());
 
     // Refresh the 'twitter' index to ensure it is available for querying.
     esServer.refresIndex("twitter");
 
     assertEquals(3, esServer.countIndex("twitter", "tweet"));
-    assertEquals("Missing result index: 'twitter/cont'", 2, esServer.countIndex("twitter", "count"));
+    assertEquals("Result index 'twitter/count' should contain to entries", 2, esServer.countIndex("twitter", "count"));
 
     HashSet<SearchHit> resultCountIndex = Sets.newHashSet(esServer.searchIndex("twitter", "count"));
     assertEquals("Result should contain 2 hits!", 2, resultCountIndex.size());

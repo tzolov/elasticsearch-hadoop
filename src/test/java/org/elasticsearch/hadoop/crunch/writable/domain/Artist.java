@@ -1,4 +1,4 @@
-package org.elasticsearch.hadoop.crunch;
+package org.elasticsearch.hadoop.crunch.writable.domain;
 
 import java.io.DataInput;
 import java.io.DataOutput;

@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.crunch;
+package org.elasticsearch.hadoop.crunch.writable;
 
 import static junit.framework.Assert.assertEquals;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Map;
 
 import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
 import org.apache.crunch.impl.mr.MRPipeline;
 import org.apache.crunch.types.writable.WritableTypeFamily;
-import org.apache.hadoop.io.MapWritable;
-import org.apache.hadoop.io.Text;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.hadoop.crunch.ESTypedSource;
+import org.elasticsearch.hadoop.util.EmbeddedElasticsearchServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -67,10 +68,16 @@ public class CrunchMultipleInputsTest implements Serializable {
     esServer.shutdown();
   }
 
-  static class MapWritableToString extends MapFn<MapWritable, String> {
+  static class ExtractMapField extends MapFn<Map, String> {
+    private String field;
+
+    public ExtractMapField(String field) {
+      this.field = field;
+    }
+
     @Override
-    public String map(MapWritable inputMap) {
-      return inputMap.get(new Text("user")).toString();
+    public String map(Map inputMap) {
+      return inputMap.get(field).toString();
     }
   }
 
@@ -86,14 +93,11 @@ public class CrunchMultipleInputsTest implements Serializable {
     // Create new Crunch pipeline
     MRPipeline pipeline = new MRPipeline(CrunchMultipleInputsTest.class);
 
-    PCollection<String> users1 = pipeline.read(
-        new ESSource.Builder("twitter1/tweet/_search?q=*").setHost("localhost").setPort(9200).build()).parallelDo(
-        new MapWritableToString(), tf.strings());
+    PCollection<String> users1 = pipeline.read(new ESTypedSource<Map>("twitter1/tweet/_search?q=*", Map.class))
+        .parallelDo(new ExtractMapField("user"), tf.strings());
 
-    PCollection<String> users2 = pipeline.read(
-        new ESSource.Builder("twitter2/tweet/_search?q=*").setHost("localhost").setPort(9200).build()).parallelDo(
-        new MapWritableToString(), tf.strings());
-
+    PCollection<String> users2 = pipeline.read(new ESTypedSource<Map>("twitter2/tweet/_search?q=*", Map.class))
+        .parallelDo(new ExtractMapField("user"), tf.strings());
 
     assertEquals(2, Lists.newArrayList(users1.union(users2).materialize().iterator()).size());
   }
