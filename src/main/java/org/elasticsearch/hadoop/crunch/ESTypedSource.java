@@ -22,57 +22,53 @@ import org.apache.crunch.Source;
 import org.apache.crunch.io.CrunchInputs;
 import org.apache.crunch.io.FormatBundle;
 import org.apache.crunch.types.PType;
-import org.apache.crunch.types.writable.Writables;
+import org.apache.crunch.types.writable.WritableTypeFamily;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
 import org.elasticsearch.hadoop.mr.ESInputFormat;
 
 import com.google.common.base.Objects;
 
-/**
- * @deprecated use the {@link ESTypedSource} instead
- */
-public class ESSource implements Source<MapWritable> {
+public class ESTypedSource<T> implements Source<T> {
 
-  private PType<MapWritable> ptype;
+  private PType<T> ptype;
   private String esQuery;
 
   private String host = "localhost";
   private int port = 9200;
 
-  public ESSource(String esQuery) {
-    this.ptype = Writables.writables(MapWritable.class);
+  public ESTypedSource(String esQuery, Class<T> classType) {
+    this.ptype = ESTypes.jsonMapWritable(classType, WritableTypeFamily.getInstance());
     this.esQuery = esQuery;
   }
 
-  public static class Builder {
+  public static class Builder<T> {
 
-    private ESSource esSource;
+    private ESTypedSource<T> esSource;
 
-    public Builder(String esQuery) {
-      esSource = new ESSource(esQuery);
+    public Builder(String esQuery, Class<T> classType) {
+      esSource = new ESTypedSource<T>(esQuery, classType);
     }
 
-    public Builder setHost(String host) {
+    public Builder<T> setHost(String host) {
       esSource.host = host;
       return this;
     }
 
-    public Builder setPort(int port) {
+    public Builder<T> setPort(int port) {
       esSource.port = port;
       return this;
     }
 
-    public ESSource build() {
+    public ESTypedSource<T> build() {
       return esSource;
     }
   }
 
   @Override
-  public PType<MapWritable> getType() {
+  public PType<T> getType() {
     return ptype;
   }
 
@@ -80,7 +76,7 @@ public class ESSource implements Source<MapWritable> {
   public void configureSource(Job job, int inputId) throws IOException {
 
     if (inputId == -1) {// single input
-      
+
       Configuration conf = job.getConfiguration();
 
       conf.set(ConfigurationOptions.ES_HOST, host);
@@ -88,7 +84,7 @@ public class ESSource implements Source<MapWritable> {
       conf.set(ConfigurationOptions.ES_QUERY, esQuery);
 
       job.setInputFormatClass(ESInputFormat.class);
-       
+
     } else { // multiple inputs
 
       FormatBundle<ESInputFormat> inputBundle = FormatBundle.forInput(ESInputFormat.class)
@@ -123,7 +119,7 @@ public class ESSource implements Source<MapWritable> {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    ESSource other = (ESSource) obj;
+    ESTypedSource other = (ESTypedSource) obj;
 
     return Objects.equal(esQuery, other.esQuery) && Objects.equal(host, other.host) && Objects.equal(port, other.port);
   }
