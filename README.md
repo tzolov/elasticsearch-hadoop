@@ -173,77 +173,80 @@ ES-Hadoop provides ElasticSearch [Source][] (`ESTypedSource`) and [Target][] (`E
 For annotated sample applications check: [CrunchAvroIT][], [CrunchMapSerDeIT][] and [CrunchWritableSerDeIT][].
 
 ### Reading
-
-* To Java Map:
+With Crunch you have several options to represent the data read from ES: java Map, custom Writables, (specific and reflection) Avro classes and plain JSON String 
+* To `Map`:
 ```java
 MRPipeline pipeline = new MRPipeline(...);
 PCollection<Map> tweets = pipeline.read(
 	new ESTypedSource.Builder("twitter/tweet/_search?q=user:*", Map.class)
         .setHost("localhost").setPort(9700).build());
 ```
-The result collection of `java.util.Map` elements represents the `source` data as it appears in the input ES index. 
-The JSON format in ES is mapped into java Map type. One can use the `get("attributeName")` method to retrieve to 
-obtain attribute value.
+The JSON `source` data in ES is mapped into `java.util.Map`. One can use the `get("attributeName")` to retrieve 
+a particular value. The value in turn can be primitive or complex java object.
 
-* To custom Writable class:
+* To `Writable` class:
 ```java
 PCollection<Tweet> tweets = pipeline.read(
 	new ESTypedSource.Builder<Tweet>("twitter/tweet/_search?q=user:*", Tweet.class).setPort(9700).build());
 ```
-Maps the ES `source` instances into predefine Tweet class (relies on Jackson's default JSON mapping).
+Maps the ES `source` instances into predefine Tweet (`Writable`) class (uses Jackson's default JSON mapping to map the Writable class into JSON).
 
-* To (Specific) Avro class:
+* To [Avro][] class:
 ```java
 PCollection<Person> people = pipeline.read(
     new ESTypedSource.Builder<String>("person/avro/_search?q=*", Person.class).setPort(9700).build());
 ```
-Maps the ES `source` instances into generated (specific) Avro class (relies on Jackson's default JSON mapping).
-* To Java String: 
+Maps the ES `source` instances into (specific or reflection) Avro classes. Works only with [Avro Specific API][] and [Avro Reflection API][] 
+but doesn't support [Avro Generic API][]! 
+```
+Note: This implementation does not use Avro's Schema deserialize the JSON into the Avro class! It uses the Jackson parser instead!
+```
+* To `String`: 
 ```java
 PCollection<String> people = pipeline.read(
         new ESTypedSource.Builder<String>("person/avro/_search?q=*", String.class).setPort(9700).build());
 ```
-Maps the ES `source` instances into plain java String (in JSON format). 
+Maps the ES `source` instances into plain java String. 
 
 ### Writing
-
-* From Java Map:
+Crunch provides several mechanisms to represent the data being sent to ES: Java `Map`, custom `Writable`, `Avro` or plain `String`. 
+* From `Map`:
 ```java
 PCollection<Map> mapCollection = ...
 pipeline.write(mapCollection, new ESTarget.Builder("twitter/count").setPort(9700).build());
 ```
-This approach relies on Jackson to serialize the Map into JSON.
+Uses Jackson to serialize the Map into JSON.
 
-* From a custom Writable class:
+* From `Writable` class:
 ```java
 PCollection<UserMessageCount> writableCollection = ...
 pipeline.write(writableCollection, new ESTarget.Builder("twitter/count").setPort(9700).build());
 ```
-This approach relies on Jackson's `ObjectMapper` serialization (inside the `RestClient`) to convert the Writable class 
-into JSON source. The output JSON format is defined with a custom Java class (UserMessageCount in the example above).  
-Example Writable class:   
+This approach uses Jackson to convert the `Writable` class into JSON. Example Writable class:   
 ```java
 public class UserMessageCount implements Writable, Serializable {
 
-  private String userName;
+	private String userName;
   
-  public String getUserName() { return userName; }
-  public void setUserName(String userName) { this.userName = userName;}
+	public String getUserName() {return userName;}
+	public void setUserName(String userName) {this.userName = userName;}
   
-  @Override
-  public void readFields(DataInput arg0) throws IOException { /* empty */ }
-  @Override
-  public void write(DataOutput arg0) throws IOException { /* empty */ }
+	@Override public void readFields(DataInput arg0) throws IOException { /* empty */ }
+	@Override public void write(DataOutput arg0) throws IOException { /* empty */ }
 }
 ```
-This class will be mapped into the JSON:
+This class will is mapped to JSON:
 ```JSON
-  _source: {
-    userName: "Crunch user"
-  }
+_source: {
+	userName: "Crunch user"
+}
 ```
-* From Avro classes:
-Same as custom Writable classes. The Avro class is serialized according to Jakckson's ObjectMapper rules.
+* From [Avro][] class:
+```java
+PCollection<Person> personCollection = ...
+pipeline.write(personCollection, new ESTarget.Builder("person/avro").setPort(9700).build());
+```
+Note: The Avro class is serialized according to Jakckson's ObjectMapper rules not the Avro schema!
 
 # Building the source
 
@@ -276,3 +279,8 @@ and install it in your local Maven repository:
 [CrunchAvroIT]: https://github.com/tzolov/elasticsearch-hadoop/blob/master/src/test/java/org/elasticsearch/hadoop/integration/crunch/avro/CrunchAvroIT.java
 [CrunchMapSerDeIT]: https://github.com/tzolov/elasticsearch-hadoop/blob/master/src/test/java/org/elasticsearch/hadoop/integration/crunch/writable/e2e/CrunchMapSerDeIT.java
 [CrunchWritableSerDeIT]: https://github.com/tzolov/elasticsearch-hadoop/blob/master/src/test/java/org/elasticsearch/hadoop/integration/crunch/writable/e2e/CrunchWritableSerDeIT.java
+[Avro Specific API]: http://avro.apache.org/docs/current/api/java/org/apache/avro/specific/package-summary.html#package_description
+[Avro Reflection API]: http://avro.apache.org/docs/current/api/java/org/apache/avro/reflect/package-summary.html#package_description
+[Avro Generic API]: http://avro.apache.org/docs/current/api/java/org/apache/avro/generic/package-summary.html#package_description
+[Avro]: http://avro.apache.org/docs/current/index.html
+
