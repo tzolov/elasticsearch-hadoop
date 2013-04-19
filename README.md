@@ -177,7 +177,8 @@ For annotated sample applications check: [CrunchAvroIT][], [CrunchMapSerDeIT][] 
 * To Java Map:
 ```java
 MRPipeline pipeline = new MRPipeline(...);
-PCollection<Map> tweets = pipeline.read(new ESTypedSource.Builder("twitter/tweet/_search?q=user:*", Map.class)
+PCollection<Map> tweets = pipeline.read(
+	new ESTypedSource.Builder("twitter/tweet/_search?q=user:*", Map.class)
         .setHost("localhost").setPort(9700).build());
 ```
 The result collection of `java.util.Map` elements represents the `source` data as it appears in the input ES index. 
@@ -191,7 +192,7 @@ PCollection<Tweet> tweets = pipeline.read(
 ```
 Maps the ES `source` instances into predefine Tweet class (relies on Jackson's default JSON mapping).
 
-* Read into a (Specific) Avro class:
+* To (Specific) Avro class:
 ```java
 PCollection<Person> people = pipeline.read(
     new ESTypedSource.Builder<String>("person/avro/_search?q=*", Person.class).setPort(9700).build());
