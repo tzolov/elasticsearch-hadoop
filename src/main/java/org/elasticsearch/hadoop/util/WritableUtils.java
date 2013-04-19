@@ -27,6 +27,7 @@ import java.util.TreeMap;
 import org.apache.hadoop.io.AbstractMapWritable;
 import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.BooleanWritable;
+import org.apache.hadoop.io.ByteWritable;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
@@ -60,6 +61,9 @@ public abstract class WritableUtils {
         }
         else if (object instanceof Integer) {
             return new VIntWritable((Integer) object);
+        }
+        else if (object instanceof Byte) {
+            return new ByteWritable((Byte) object);
         }
         else if (object instanceof Double) {
             return new DoubleWritable((Double) object);
@@ -135,6 +139,9 @@ public abstract class WritableUtils {
         }
         else if (writable instanceof VIntWritable) {
             return ((VIntWritable) writable).get();
+        }
+        else if (writable instanceof ByteWritable) {
+            return ((ByteWritable) writable).get();
         }
         else if (writable instanceof DoubleWritable) {
             return ((DoubleWritable) writable).get();
