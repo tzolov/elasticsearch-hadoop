@@ -174,7 +174,7 @@ For annotated sample applications check: [CrunchAvroIT][], [CrunchMapSerDeIT][] 
 
 ### Reading
 
-* Read into java Map:
+* To Java Map:
 ```java
 MRPipeline pipeline = new MRPipeline(...);
 PCollection<Map> tweets = pipeline.read(new ESTypedSource.Builder("twitter/tweet/_search?q=user:*", Map.class)
@@ -184,20 +184,20 @@ The result collection of `java.util.Map` elements represents the `source` data a
 The JSON format in ES is mapped into java Map type. One can use the `get("attributeName")` method to retrieve to 
 obtain attribute value.
 
-* Read into a custom Writable class (Tweet.java):
+* To custom Writable class:
 ```java
-PCollection<Tweet> tweets = pipeline.read(new ESTypedSource.Builder<Tweet>("twitter/tweet/_search?q=user:*", Tweet.class)
-		.setPort(9700).build());
+PCollection<Tweet> tweets = pipeline.read(
+	new ESTypedSource.Builder<Tweet>("twitter/tweet/_search?q=user:*", Tweet.class).setPort(9700).build());
 ```
 Maps the ES `source` instances into predefine Tweet class (relies on Jackson's default JSON mapping).
 
 * Read into a (Specific) Avro class:
 ```java
 PCollection<Person> people = pipeline.read(
-        new ESTypedSource.Builder<String>("person/avro/_search?q=*", Person.class).setPort(9700).build());
+    new ESTypedSource.Builder<String>("person/avro/_search?q=*", Person.class).setPort(9700).build());
 ```
 Maps the ES `source` instances into generated (specific) Avro class (relies on Jackson's default JSON mapping).
-* Read into a String: 
+* To Java String: 
 ```java
 PCollection<String> people = pipeline.read(
         new ESTypedSource.Builder<String>("person/avro/_search?q=*", String.class).setPort(9700).build());
@@ -206,22 +206,20 @@ Maps the ES `source` instances into plain java String (in JSON format).
 
 ### Writing
 
-* Write java Map:
+* From Java Map:
 ```java
 PCollection<Map> mapCollection = ...
 pipeline.write(mapCollection, new ESTarget.Builder("twitter/count").setPort(9700).build());
 ```
 This approach relies on Jackson to serialize the Map into JSON.
 
-* Write a custom Writable class:
-
+* From a custom Writable class:
 ```java
 PCollection<UserMessageCount> writableCollection = ...
 pipeline.write(writableCollection, new ESTarget.Builder("twitter/count").setPort(9700).build());
 ```
 This approach relies on Jackson's `ObjectMapper` serialization (inside the `RestClient`) to convert the Writable class 
 into JSON source. The output JSON format is defined with a custom Java class (UserMessageCount in the example above).  
-
 Example Writable class:   
 ```java
 public class UserMessageCount implements Writable, Serializable {
@@ -243,8 +241,7 @@ This class will be mapped into the JSON:
     userName: "Crunch user"
   }
 ```
-
-* Write a Avro classes:
+* From Avro classes:
 Same as custom Writable classes. The Avro class is serialized according to Jakckson's ObjectMapper rules.
 
 # Building the source
