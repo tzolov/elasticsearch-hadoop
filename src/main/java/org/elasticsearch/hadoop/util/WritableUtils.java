@@ -184,6 +184,7 @@ public abstract class WritableUtils {
         }
         // fall-back to bytearray
         //return org.apache.hadoop.io.WritableUtils.toByteArray(writable);
+        //TODO how to handle custom Writables?
         return writable;
     }
 }
