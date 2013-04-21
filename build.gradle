@@ -1,6 +1,6 @@
 buildscript {
     repositories {
-        maven { url 'http://repo.springsource.org/plugins-release' }
+        maven { url 'http://repo.springsource.org/plugins-release' }        
     }
     dependencies {
         classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.3'
@@ -19,6 +19,7 @@ repositories {
   // JDO ec2 missing from Maven Central
   maven { url "http://www.datanucleus.org/downloads/maven2" }
   maven { url "http://conjars.org/repo" }
+  maven { url "https://repository.cloudera.com/artifactory/cloudera-repos/" }
 }
 
 apply plugin: "java"
@@ -27,12 +28,14 @@ apply plugin: 'idea'
 apply plugin: 'propdeps'
 apply plugin: 'propdeps-idea'
 apply plugin: 'propdeps-eclipse'
+apply plugin: 'maven'
 
 dependencies {
 	ext.hadoopVersion=hadoop10Version
 	
     compile("org.apache.hadoop:hadoop-streaming:$hadoopVersion")
 	compile("org.apache.hadoop:hadoop-tools:$hadoopVersion")
+//	compile("org.apache.hadoop:hadoop-client:$hadoopVersion")
 	
 	optional("commons-io:commons-io:2.1")
 	compile("org.codehaus.jackson:jackson-mapper-asl:1.8.8")
