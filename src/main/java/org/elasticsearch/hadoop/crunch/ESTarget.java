@@ -123,4 +123,10 @@ public class ESTarget implements MapReduceTarget {
 
     return Objects.equal(index, other.index) && Objects.equal(host, other.host) && Objects.equal(port, other.port);
   }
+  
+  @Override
+  public String toString() {
+    return "ESTarget(" + index + ")";
+  }
+
 }

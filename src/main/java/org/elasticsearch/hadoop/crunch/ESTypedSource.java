@@ -123,4 +123,9 @@ public class ESTypedSource<T> implements Source<T> {
 
     return Objects.equal(esQuery, other.esQuery) && Objects.equal(host, other.host) && Objects.equal(port, other.port);
   }
+  
+  @Override
+  public String toString() {
+    return "ESSource(" + esQuery + ")";
+  }
 }
