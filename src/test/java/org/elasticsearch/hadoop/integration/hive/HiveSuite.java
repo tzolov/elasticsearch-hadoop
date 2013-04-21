@@ -16,15 +16,44 @@
 package org.elasticsearch.hadoop.integration.hive;
 
 import org.elasticsearch.hadoop.integration.LocalES;
+import org.elasticsearch.hadoop.integration.TestSettings;
 import org.junit.ClassRule;
+import org.junit.rules.ChainedExternalResource;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ HiveSaveTest.class, HiveSearchTest.class })
+//@Suite.SuiteClasses({ HiveSearchTest.class })
 public class HiveSuite {
 
+    static HiveEmbeddedServer server;
+    static String cleanDdl = "DROP DATABASE IF EXISTS test CASCADE";
+    static String createDB = "CREATE DATABASE test";
+    static String useDB = "USE test";
+
+    public static ExternalResource hive = new ExternalResource() {
+        @Override
+        protected void before() throws Throwable {
+            server = new HiveEmbeddedServer(TestSettings.TESTING_PROPS);
+            server.start();
+
+            server.execute(cleanDdl);
+            server.execute(createDB);
+            server.execute(useDB);
+        }
+
+        @Override
+        protected void after() {
+            try {
+                server.execute(cleanDdl);
+            } catch (Exception ex) {
+            }
+            server.stop();
+        }
+    };
+
     @ClassRule
-    public static ExternalResource resource = new LocalES();
+    public static ExternalResource resource = new ChainedExternalResource(new LocalES(), hive);
 }
