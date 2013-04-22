@@ -33,7 +33,7 @@ import org.elasticsearch.hadoop.mr.ESInputFormat;
 import com.google.common.base.Objects;
 
 /**
- * @deprecated use the {@link ESTypedSource} instead
+ * @deprecated use the {@link ESSource} instead
  */
 public class ESMapWritableSource implements Source<MapWritable> {
 

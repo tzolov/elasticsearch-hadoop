@@ -27,7 +27,7 @@ import org.apache.crunch.impl.mr.MRPipeline;
 import org.apache.crunch.types.writable.WritableTypeFamily;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.hadoop.crunch.ESTypedSource;
+import org.elasticsearch.hadoop.crunch.ESSource;
 import org.elasticsearch.hadoop.integration.LocalES;
 import org.elasticsearch.hadoop.integration.crunch.ESTestUtil;
 import org.junit.BeforeClass;
@@ -87,11 +87,11 @@ public class CrunchMultipleInputsTest implements Serializable {
     MRPipeline pipeline = new MRPipeline(CrunchMultipleInputsTest.class);
 
     PCollection<String> users1 = pipeline.read(
-        new ESTypedSource.Builder<Map>("twitter1/tweet/_search?q=*", Map.class).setPort(9700).build()).parallelDo(
+        new ESSource.Builder<Map>("twitter1/tweet/_search?q=*", Map.class).setPort(9700).build()).parallelDo(
         new ExtractField("user"), tf.strings());
 
     PCollection<String> users2 = pipeline.read(
-        new ESTypedSource.Builder<Map>("twitter2/tweet/_search?q=*", Map.class).setPort(9700).build()).parallelDo(
+        new ESSource.Builder<Map>("twitter2/tweet/_search?q=*", Map.class).setPort(9700).build()).parallelDo(
         new ExtractField("user"), tf.strings());
 
     assertEquals(2, Lists.newArrayList(users1.union(users2).materialize().iterator()).size());

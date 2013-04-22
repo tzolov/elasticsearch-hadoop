@@ -168,7 +168,7 @@ new HadoopFlowConnector().connect(in, out, new Pipe("write-to-ES")).complete();
 ```
 
 ## [Crunch][]
-ES-Hadoop provides ElasticSearch [Source][] (`ESTypedSource`) and [Target][] (`ESTarget`) for reading and writing ElasticSearch indexes.
+ES-Hadoop provides ElasticSearch [Source][] (`ESSource`) and [Target][] (`ESTarget`) for reading and writing ElasticSearch indexes.
 
 For annotated sample applications check: [CrunchAvroIT][], [CrunchMapSerDeIT][] and [CrunchWritableSerDeIT][].
 
@@ -178,7 +178,7 @@ With Crunch you have several options to represent the data read from ES: java Ma
 ```java
 MRPipeline pipeline = new MRPipeline(...);
 PCollection<Map> tweets = pipeline.read(
-	new ESTypedSource.Builder("twitter/tweet/_search?q=user:*", Map.class)
+	new ESSource.Builder("twitter/tweet/_search?q=user:*", Map.class)
         .setHost("localhost").setPort(9700).build());
 ```
 The JSON `source` data in ES is mapped into `java.util.Map`. One can use the `get("attributeName")` to retrieve 
@@ -187,14 +187,14 @@ a particular value. The value in turn can be primitive or complex java object.
 * To `Writable` class:
 ```java
 PCollection<Tweet> tweets = pipeline.read(
-	new ESTypedSource.Builder<Tweet>("twitter/tweet/_search?q=user:*", Tweet.class).setPort(9700).build());
+	new ESSource.Builder<Tweet>("twitter/tweet/_search?q=user:*", Tweet.class).setPort(9700).build());
 ```
 Maps the ES `source` instances into predefine Tweet (`Writable`) class (uses Jackson's default JSON mapping to map the Writable class into JSON).
 
 * To [Avro][] class:
 ```java
 PCollection<Person> people = pipeline.read(
-    new ESTypedSource.Builder<String>("person/avro/_search?q=*", Person.class).setPort(9700).build());
+    new ESSource.Builder<String>("person/avro/_search?q=*", Person.class).setPort(9700).build());
 ```
 Maps the ES `source` instances into (specific or reflection) Avro classes. Works only with [Avro Specific API][] and [Avro Reflection API][] 
 but doesn't support [Avro Generic API][]! 
@@ -204,7 +204,7 @@ Note: This implementation does not use Avro's Schema deserialize the JSON into t
 * To `String`: 
 ```java
 PCollection<String> people = pipeline.read(
-        new ESTypedSource.Builder<String>("person/avro/_search?q=*", String.class).setPort(9700).build());
+        new ESSource.Builder<String>("person/avro/_search?q=*", String.class).setPort(9700).build());
 ```
 Maps the ES `source` instances into plain java String. 
 

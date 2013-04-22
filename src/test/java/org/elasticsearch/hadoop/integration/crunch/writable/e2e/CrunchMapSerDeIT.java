@@ -29,8 +29,8 @@ import org.apache.crunch.impl.mr.MRPipeline;
 import org.apache.crunch.lib.Aggregate;
 import org.apache.crunch.types.writable.Writables;
 import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.hadoop.crunch.ESSource;
 import org.elasticsearch.hadoop.crunch.ESTarget;
-import org.elasticsearch.hadoop.crunch.ESTypedSource;
 import org.elasticsearch.hadoop.crunch.ESTypes;
 import org.elasticsearch.hadoop.integration.LocalES;
 import org.elasticsearch.hadoop.integration.crunch.ESTestUtil;
@@ -71,7 +71,7 @@ public class CrunchMapSerDeIT implements Serializable {
     // 1. Query all tweets from the 'twitter' index. Result is represented
     // by collection of java.util.Map. One Map element represents one ES
     // 'source' object.
-    PCollection<Map> tweets = pipeline.read(new ESTypedSource.Builder("twitter/tweet/_search?q=user:*", Map.class)
+    PCollection<Map> tweets = pipeline.read(new ESSource.Builder("twitter/tweet/_search?q=user:*", Map.class)
         .setHost("localhost").setPort(9700).build());
 
     // 2. Extract the user names from the tweet elements.

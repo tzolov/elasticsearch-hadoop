@@ -34,8 +34,8 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.common.collect.Lists;
+import org.elasticsearch.hadoop.crunch.ESSource;
 import org.elasticsearch.hadoop.crunch.ESTarget;
-import org.elasticsearch.hadoop.crunch.ESTypedSource;
 import org.elasticsearch.hadoop.integration.LocalES;
 import org.elasticsearch.hadoop.integration.crunch.ESTestUtil;
 import org.elasticsearch.hadoop.integration.crunch.writable.domain.UserMessageCount;
@@ -140,7 +140,7 @@ public class CrunchWritableSerDeIT implements Serializable {
     // 1. Query all tweets from the 'twitter' index. Result is represented
     // by collection of UserMessageCount. One UserMessageCount instance
     // represents one ES 'source' object.
-    PCollection<Tweet> tweets = pipeline.read(new ESTypedSource.Builder<Tweet>("twitter/tweet/_search?q=user:*",
+    PCollection<Tweet> tweets = pipeline.read(new ESSource.Builder<Tweet>("twitter/tweet/_search?q=user:*",
         Tweet.class).setPort(9700).build());
 
     // TODO find better way to convert the PType

@@ -30,7 +30,7 @@ import org.apache.crunch.io.From;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
 import org.elasticsearch.hadoop.crunch.ESTarget;
-import org.elasticsearch.hadoop.crunch.ESTypedSource;
+import org.elasticsearch.hadoop.crunch.ESSource;
 import org.elasticsearch.hadoop.integration.LocalES;
 import org.elasticsearch.hadoop.integration.crunch.writable.domain.Artist;
 import org.junit.ClassRule;
@@ -94,7 +94,7 @@ public class CrunchReadWriteTest implements Serializable {
 
     Iterable<Artist> artists = pipeline
         .read(
-            new ESTypedSource.Builder<MapWritable>("radio/artists/_search?q=me*", MapWritable.class).setPort(9700)
+            new ESSource.Builder<MapWritable>("radio/artists/_search?q=me*", MapWritable.class).setPort(9700)
                 .build()).parallelDo(new MapFn<MapWritable, Artist>() {
           @Override
           public Artist map(MapWritable input) {

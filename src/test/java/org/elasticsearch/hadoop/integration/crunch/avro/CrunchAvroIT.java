@@ -36,7 +36,7 @@ import org.apache.crunch.io.At;
 import org.apache.crunch.types.avro.AvroTypeFamily;
 import org.apache.crunch.types.avro.Avros;
 import org.elasticsearch.hadoop.crunch.ESTarget;
-import org.elasticsearch.hadoop.crunch.ESTypedSource;
+import org.elasticsearch.hadoop.crunch.ESSource;
 import org.elasticsearch.hadoop.integration.LocalES;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -87,17 +87,17 @@ public class CrunchAvroIT implements Serializable {
 
     readPersonFromES();
 
-    readAsTextFromESIndex();
+    readAsTextFromES();
 
   }
 
-  private void readAsTextFromESIndex() {
+  private void readAsTextFromES() {
     MRPipeline pipeline = new MRPipeline(CrunchAvroIT.class);
 
     IdentityFn<String> identityFn = IdentityFn.getInstance();
 
     PCollection<String> rawCollection = pipeline.read(
-        new ESTypedSource.Builder<String>("person/avro/_search?q=*", String.class).setPort(9700).build()).parallelDo(
+        new ESSource.Builder<String>("person/avro/_search?q=*", String.class).setPort(9700).build()).parallelDo(
         identityFn, tf.strings());
 
     ArrayList<String> list = Lists.newArrayList(rawCollection.materialize());
@@ -112,7 +112,7 @@ public class CrunchAvroIT implements Serializable {
     MRPipeline pipeline = new MRPipeline(CrunchAvroIT.class);
 
     PCollection<Person> people = pipeline.read(
-        new ESTypedSource.Builder<Person>("person/avro/_search?q=*", Person.class).setPort(9700).build()).parallelDo(
+        new ESSource.Builder<Person>("person/avro/_search?q=*", Person.class).setPort(9700).build()).parallelDo(
         identityFn, tf.records(Person.class));
 
     System.out.println(people.getPType().getFamily());
