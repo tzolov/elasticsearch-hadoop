@@ -35,7 +35,7 @@ import com.google.common.base.Objects;
 /**
  * @deprecated use the {@link ESTypedSource} instead
  */
-public class ESSource implements Source<MapWritable> {
+public class ESMapWritableSource implements Source<MapWritable> {
 
   private PType<MapWritable> ptype;
   private String esQuery;
@@ -43,17 +43,17 @@ public class ESSource implements Source<MapWritable> {
   private String host = "localhost";
   private int port = 9200;
 
-  public ESSource(String esQuery) {
+  public ESMapWritableSource(String esQuery) {
     this.ptype = Writables.writables(MapWritable.class);
     this.esQuery = esQuery;
   }
 
   public static class Builder {
 
-    private ESSource esSource;
+    private ESMapWritableSource esSource;
 
     public Builder(String esQuery) {
-      esSource = new ESSource(esQuery);
+      esSource = new ESMapWritableSource(esQuery);
     }
 
     public Builder setHost(String host) {
@@ -66,7 +66,7 @@ public class ESSource implements Source<MapWritable> {
       return this;
     }
 
-    public ESSource build() {
+    public ESMapWritableSource build() {
       return esSource;
     }
   }
@@ -123,7 +123,7 @@ public class ESSource implements Source<MapWritable> {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    ESSource other = (ESSource) obj;
+    ESMapWritableSource other = (ESMapWritableSource) obj;
 
     return Objects.equal(esQuery, other.esQuery) && Objects.equal(host, other.host) && Objects.equal(port, other.port);
   }
