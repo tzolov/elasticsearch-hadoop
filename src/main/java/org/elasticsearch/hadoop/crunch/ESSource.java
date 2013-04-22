@@ -31,7 +31,7 @@ import org.elasticsearch.hadoop.mr.ESInputFormat;
 
 import com.google.common.base.Objects;
 
-public class ESTypedSource<T> implements Source<T> {
+public class ESSource<T> implements Source<T> {
 
   private PType<T> ptype;
   private String esQuery;
@@ -39,17 +39,17 @@ public class ESTypedSource<T> implements Source<T> {
   private String host = "localhost"; 
   private int port = 9200;
 
-  public ESTypedSource(String esQuery, Class<T> classType) {
+  public ESSource(String esQuery, Class<T> classType) {
     this.ptype = ESTypes.jsonMapWritable(classType, WritableTypeFamily.getInstance());
     this.esQuery = esQuery;
   }
 
   public static class Builder<T> {
 
-    private ESTypedSource<T> esSource;
+    private ESSource<T> esSource;
 
     public Builder(String esQuery, Class<T> classType) {
-      esSource = new ESTypedSource<T>(esQuery, classType);
+      esSource = new ESSource<T>(esQuery, classType);
     }
 
     public Builder<T> setHost(String host) {
@@ -62,7 +62,7 @@ public class ESTypedSource<T> implements Source<T> {
       return this;
     }
 
-    public ESTypedSource<T> build() {
+    public ESSource<T> build() {
       return esSource;
     }
   }
@@ -119,7 +119,7 @@ public class ESTypedSource<T> implements Source<T> {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    ESTypedSource other = (ESTypedSource) obj;
+    ESSource other = (ESSource) obj;
 
     return Objects.equal(esQuery, other.esQuery) && Objects.equal(host, other.host) && Objects.equal(port, other.port);
   }
