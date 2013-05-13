@@ -15,6 +15,7 @@
  */
 package org.elasticsearch.hadoop.integration.crunch.avro;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -22,6 +23,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.avro.Schema;
@@ -29,14 +31,16 @@ import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.specific.SpecificDatumWriter;
+import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
 import org.apache.crunch.fn.IdentityFn;
 import org.apache.crunch.impl.mr.MRPipeline;
 import org.apache.crunch.io.At;
 import org.apache.crunch.types.avro.AvroTypeFamily;
 import org.apache.crunch.types.avro.Avros;
-import org.elasticsearch.hadoop.crunch.ESTarget;
 import org.elasticsearch.hadoop.crunch.ESSource;
+import org.elasticsearch.hadoop.crunch.ESTarget;
 import org.elasticsearch.hadoop.integration.LocalES;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -46,6 +50,12 @@ import com.google.common.collect.Lists;
 
 public class CrunchAvroIT implements Serializable {
 
+
+  private static final List<Person> EXPECTED_ES_RESULT = Lists.newArrayList(
+//      createSecificPerosn("Christian Tzolov", 30, Lists.newArrayList("Chris", "Ian")),
+//      createSecificPerosn("John Atanasoff", 91, Lists.newArrayList("Computer father")),
+      createSecificPerosn("Kiril-Victor Tsolov", 13, Lists.newArrayList("Kevin", "Kiko")));
+
   @ClassRule
   public static LocalES esServer = new LocalES();
 
@@ -53,23 +63,51 @@ public class CrunchAvroIT implements Serializable {
 
   private File avroFile;
 
+//  private ArrayList<GenericRecord> genericAvroRecords;
+
   @Before
   public void before() throws IOException {
     avroFile = File.createTempFile("test", ".avro");
     avroFile.deleteOnExit();
 
     // Populate a test Avro file with sample data
-    populateGenericFile(
-        avroFile,
-        Lists.newArrayList(createPerosn("Christian Tzolov", 30, Lists.newArrayList("Chris", "Ian")),
-            createPerosn("John Atanasoff", 91, Lists.newArrayList("Computer father")),
-            createPerosn("Kiril-Victor Tsolov", 13, Lists.newArrayList("Kevin", "Kiko"))), Person.SCHEMA$);
+//    genericAvroRecords = Lists.newArrayList(
+//        createGenericPerosn("Christian Tzolov", 30, Lists.newArrayList("Chris", "Ian")),
+//        createGenericPerosn("John Atanasoff", 91, Lists.newArrayList("Computer father")),
+//        createGenericPerosn("Kiril-Victor Tsolov", 13, Lists.newArrayList("Kevin", "Kiko")));
 
+
+//    populateGenericFile(avroFile, genericAvroRecords, Person.SCHEMA$);
+    populateGenericFile2(avroFile, EXPECTED_ES_RESULT, Person.SCHEMA$);
     tf = AvroTypeFamily.getInstance();
   }
 
+  //@Test
+  public void testWrtieAvroToESReadAvroFromES() throws InterruptedException, IOException {
+    
+    writeAvroToES();
+    
+    esServer.refresIndex("person");
+    
+    readPersonFromES2();
+    
+    // readAsTextFromES();
+  }
+  
   @Test
-  public void testWriteAvroToES() throws InterruptedException, IOException {
+  public void test1() throws InterruptedException, IOException {
+
+
+    MRPipeline pipeline = new MRPipeline(CrunchAvroIT.class);
+
+    PCollection<Person> personCollection = pipeline.read(At.avroFile(avroFile.getAbsolutePath(),
+        Avros.records(Person.class)));
+
+    Object person = personCollection.materialize().iterator().next();
+    System.out.println(person.getClass());
+  }
+
+  private void writeAvroToES() throws InterruptedException, IOException {
 
     // Create new Crunch pipeline
     MRPipeline pipeline = new MRPipeline(CrunchAvroIT.class);
@@ -82,12 +120,6 @@ public class CrunchAvroIT implements Serializable {
     pipeline.write(personCollection, new ESTarget.Builder("person/avro").setPort(9700).build());
 
     assertTrue("Pipeline exectuion failed!", pipeline.done().succeeded());
-
-    esServer.refresIndex("person");
-
-    readPersonFromES();
-
-    readAsTextFromES();
 
   }
 
@@ -113,19 +145,94 @@ public class CrunchAvroIT implements Serializable {
 
     PCollection<Person> people = pipeline.read(
         new ESSource.Builder<Person>("person/avro/_search?q=*", Person.class).setPort(9700).build()).parallelDo(
-        identityFn, tf.records(Person.class));
+        identityFn, Avros.specifics(Person.class));
 
-    System.out.println(people.getPType().getFamily());
-    System.out.println(Lists.newArrayList(pipeline.materialize(people)));
+    assertEquals(AvroTypeFamily.getInstance(), people.getPType().getFamily());
+    Iterator<Person> iterator = pipeline.materialize(people).iterator();
+    while (iterator.hasNext()) {
+      Object person = iterator.next();
+      System.out.println(person.getClass());
+      System.out.println(person);
+    }
+//    for (Person person : materialize) {
+//      System.out.println(person);
+//    }
+//    Set<Person> result = Sets.newHashSet(pipeline.materialize(people));
+//    assertTrue(EXPECTED_ES_RESULT.equals(result));
+  }
+  public void readPersonFromES2() {
+
+
+    MRPipeline pipeline = new MRPipeline(CrunchAvroIT.class);
+
+    PCollection<Person> people = pipeline.read(
+        new ESSource.Builder<Person>("person/avro/_search?q=*", Person.class).setPort(9700).build()).parallelDo(
+        new MapFn<Person, Person>() {
+
+          @Override
+          public Person map(Person input) {
+            System.out.println("a>" + input.getClass());
+            System.out.println("a>" + input);
+            return input;
+          }
+        }, Avros.specifics(Person.class)).parallelDo(
+            new MapFn<Person, Person>() {
+
+              @Override
+              public Person map(Person input) {
+                System.out.println("b>" + input.getClass());
+                System.out.println("b>" + input);
+                return input;
+              }
+            }, Avros.specifics(Person.class));
+
+    assertEquals(AvroTypeFamily.getInstance(), people.getPType().getFamily());
+    
+    Iterator<Person> iterator = people.materialize().iterator();
+    while (iterator.hasNext()) {
+      Object person = iterator.next();
+      System.out.println(person.getClass());
+      System.out.println(person);
+    }
+//    for (Person person : materialize) {
+//      System.out.println(person);
+//    }
+//    Set<Person> result = Sets.newHashSet(pipeline.materialize(people));
+//    assertTrue(EXPECTED_ES_RESULT.equals(result));
   }
 
-  private GenericRecord createPerosn(String name, int age, ArrayList<String> siblingnames) {
+  private static Person createSecificPerosn(String name, int age, List<String> siblingnames) {
+    Person person = new Person();
+    person.setName(name);
+    person.setAge(age);    
+    person.setSiblingnames(Lists.newArrayList(siblingnames.toArray(new CharSequence[siblingnames.size()])));
+
+    return person;
+  }
+
+  private static GenericRecord createGenericPerosn(String name, int age, ArrayList<String> siblingnames) {
     GenericRecord savedRecord = new GenericData.Record(Person.SCHEMA$);
     savedRecord.put("name", name);
     savedRecord.put("age", age);
     savedRecord.put("siblingnames", siblingnames);
 
     return savedRecord;
+  }
+
+  private void populateGenericFile2(File avroFile, List<Person> genericRecords, Schema schema) throws IOException {
+
+    FileOutputStream outputStream = new FileOutputStream(avroFile);
+    SpecificDatumWriter<Person> sepcificDatumWriter = new SpecificDatumWriter<Person>();
+
+    DataFileWriter<Person> dataFileWriter = new DataFileWriter<Person>(sepcificDatumWriter);
+    dataFileWriter.create(schema, outputStream);
+
+    for (Person record : genericRecords) {
+      dataFileWriter.append(record);
+    }
+
+    dataFileWriter.close();
+    outputStream.close();
   }
 
   private void populateGenericFile(File avroFile, List<GenericRecord> genericRecords, Schema schema) throws IOException {
@@ -142,7 +249,6 @@ public class CrunchAvroIT implements Serializable {
 
     dataFileWriter.close();
     outputStream.close();
-
   }
 
 }

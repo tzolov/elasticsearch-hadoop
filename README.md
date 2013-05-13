@@ -1,16 +1,38 @@
-# ElasticSearch Hadoop
-Read and write data to/from ElasticSearch within Hadoop/MapReduce libraries. Automatically converts data to/from JSON. Supports [MapReduce](#mapreduce), [Cascading](#cascading), [Hive](#hive), [Pig](#pig) and [Crunch](#crunch).
+# Elasticsearch Hadoop [![Build Status](http://54.225.158.147:3000)](http://build.elasticsearch.org/browse/ESHADOOP-MASTER) [![Build Status](https://travis-ci.org/elasticsearch/elasticsearch-hadoop.png)](https://travis-ci.org/elasticsearch/elasticsearch-hadoop)
+Read and write data to/from Elasticsearch within Hadoop/MapReduce libraries. Automatically converts data to/from JSON. Supports [MapReduce](#mapreduce), [Cascading](#cascading), [Hive](#hive), [Pig](#pig) and [Crunch](#crunch).
 
 # Requirements
-ElasticSearch cluster accessible through [REST][]. That's it!
+Elasticsearch cluster accessible through [REST][]. That's it!
 Significant effort has been invested to create a small, dependency-free, self-contained jar that can be downloaded and put to use without any dependencies. Simply make it available to your job classpath and you're set.
 
 # License
 This project is released under version 2.0 of the [Apache License][]
 
 # Installation
-We're working towards a first release and we plan to publish nightly builds soon. In the meantime, please [build](#building-the-source) the project yourself. 
-We do build and test the code on _each_ commit; see the current status [here](http://build.elasticsearch.org/browse/ESHADOOP)
+We're working towards a first release. In the meantime, grab the latest nightly build from the [repository](http://oss.sonatype.org/content/repositories/snapshots/org/elasticsearch/elasticsearch-hadoop/) using any Maven-compatible tool:
+
+```xml
+<dependency>
+  <groupId>org.elasticsearch</groupId>
+  <artifactId>elasticsearch-hadoop</artifactId>
+  <version>1.3.0.BUILD-SNAPSHOT</version>
+</dependency>
+```
+
+```xml
+<repositories>
+  <repository>
+    <id>sonatype-oss</id>
+    <url>http://oss.sonatype.org/content/repositories/snapshots</url>
+	<snapshots><enabled>true</enabled></snapshots>
+  </repository>
+</repositories>
+```
+
+or [build](#building-the-source) the project yourself. 
+
+
+We do build and test the code on _each_ commit; see our CI server [![here](http://54.225.158.147:3000)](http://build.elasticsearch.org/browse/ESHADOOP-MASTER) 
 
 # Feedback / Q&A
 We're interested in your feedback! You can find us on the User [mailing list](https://groups.google.com/forum/?fromgroups#!forum/elasticsearch) - please append `[Hadoop]` to the post subject to filter it out. For more details, see the [community](http://www.elasticsearch.org/community/) page.

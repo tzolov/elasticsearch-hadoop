@@ -13,20 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.integration.rest;
+package org.elasticsearch.hadoop.util;
 
-import org.elasticsearch.hadoop.integration.TestSettings;
-import org.elasticsearch.hadoop.rest.RestClient;
-import org.junit.Test;
+import java.io.InputStream;
+import java.util.Map;
 
+import org.codehaus.jackson.map.ObjectMapper;
+
+import static org.junit.Assert.*;
 /**
+ *
  */
-public abstract class RestTest {
+public abstract class JsonUtils {
 
-    private RestClient client = new RestClient(new TestSettings());
-
-    @Test
-    public void testPagination() throws Exception {
-        client.query("twitter/_search?q=kimchy", 0, 2);
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> mapFromJson(String location) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        InputStream jsonStream = JsonUtils.class.getResourceAsStream(location);
+        assertNotNull("no resource found at " + location, jsonStream);
+        return mapper.readValue(jsonStream, Map.class);
     }
 }

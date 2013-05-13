@@ -16,11 +16,9 @@
 package org.elasticsearch.hadoop.pig;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 
 import org.apache.commons.logging.Log;
@@ -40,15 +38,13 @@ import org.apache.pig.ResourceStatistics;
 import org.apache.pig.StoreFuncInterface;
 import org.apache.pig.StoreMetadata;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
-import org.apache.pig.data.DataBag;
-import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
 import org.apache.pig.impl.util.UDFContext;
-import org.apache.pig.impl.util.Utils;
 import org.elasticsearch.hadoop.cfg.SettingsManager;
 import org.elasticsearch.hadoop.mr.ESInputFormat;
 import org.elasticsearch.hadoop.mr.ESOutputFormat;
+import org.elasticsearch.hadoop.util.IOUtils;
 import org.elasticsearch.hadoop.util.WritableUtils;
 
 /**
@@ -70,6 +66,7 @@ import org.elasticsearch.hadoop.util.WritableUtils;
 public class ESStorage extends LoadFunc implements StoreFuncInterface, StoreMetadata {
 
     private static final Log log = LogFactory.getLog(ESStorage.class);
+    private final boolean trace = log.isTraceEnabled();
 
     private final String host;
     private int port = 0;
@@ -112,7 +109,7 @@ public class ESStorage extends LoadFunc implements StoreFuncInterface, StoreMeta
 
         Properties props = UDFContext.getUDFContext().getUDFProperties(getClass(), new String[] { signature });
         String s = props.getProperty(ResourceSchema.class.getName());
-        this.schema = new ResourceSchema(Utils.getSchemaFromString(s));
+        this.schema = IOUtils.deserializeFromBase64(s);
     }
 
     // TODO: make put more lenient (if the schema is not available just shove everything on the existing type or as a big charray)
@@ -123,67 +120,16 @@ public class ESStorage extends LoadFunc implements StoreFuncInterface, StoreMeta
         Map<String, Object> data = new LinkedHashMap<String, Object>(fields.length);
 
         for (int i = 0; i < fields.length; i++) {
-            data.put(fields[i].getName(), toObject(t.get(i), fields[i]));
+            data.put(fields[i].getName(), PigTypeUtils.pigToObject(t.get(i), fields[i]));
+        }
+
+        if (trace) {
+            log.trace("Writing out tuple " + data);
         }
         try {
             writer.write(null, data);
         } catch (InterruptedException ex) {
             throw new IOException("interrupted", ex);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Object toObject(Object object, ResourceFieldSchema field) {
-        switch (field.getType()) {
-        case DataType.NULL:
-            return null;
-        case DataType.BOOLEAN:
-        case DataType.INTEGER:
-        case DataType.LONG:
-        case DataType.FLOAT:
-        case DataType.DOUBLE:
-        case DataType.CHARARRAY:
-            return object;
-        case DataType.BYTEARRAY:
-            return object.toString();
-
-        case DataType.MAP:
-            ResourceSchema nestedSchema = field.getSchema();
-            ResourceFieldSchema[] nestedFields = nestedSchema.getFields();
-
-            Map<String, Object> map = new LinkedHashMap<String, Object>();
-            int index = 0;
-            for (Map.Entry<String, Object> entry : ((Map<String, Object>) object).entrySet()) {
-                map.put(entry.getKey(), toObject(entry.getValue(), nestedFields[index++]));
-            }
-            return map;
-
-        case DataType.TUPLE:
-            nestedSchema = field.getSchema();
-            nestedFields = nestedSchema.getFields();
-            map = new LinkedHashMap<String, Object>();
-
-            // use getAll instead of get(int) to avoid having to handle Exception...
-            List<Object> tuples = ((Tuple) object).getAll();
-            for (int i = 0; i < nestedFields.length; i++) {
-                map.put(nestedFields[i].getName(), toObject(tuples.get(i), nestedFields[i]));
-            }
-            return map;
-
-        case DataType.BAG:
-            nestedSchema = field.getSchema();
-            nestedFields = nestedSchema.getFields();
-            List<Object> bag = new ArrayList<Object>();
-
-            Iterator<Tuple> it = ((DataBag) object).iterator();
-            for (int i = 0; i < nestedFields.length && it.hasNext(); i++) {
-                bag.add(toObject(it.next(), nestedFields[i]));
-            }
-            return bag;
-
-        default:
-            log.warn("Unknown type " + DataType.findTypeName(field.getType()) + "| using toString()");
-            return object.toString();
         }
     }
 
@@ -201,9 +147,8 @@ public class ESStorage extends LoadFunc implements StoreFuncInterface, StoreMeta
     public void checkSchema(ResourceSchema s) throws IOException {
         // save schema to back-end for JSON translation
         Properties props = UDFContext.getUDFContext().getUDFProperties(getClass(), new String[] { signature });
-        // save the schema as String (as oppose to the whole class through JDK serialization)
-        String schemaAsString = s.toString();
-        props.setProperty(ResourceSchema.class.getName(), schemaAsString);
+        // save the schema as String (used JDK serialization since toString() screws up the signature - see the testcase)
+        props.setProperty(ResourceSchema.class.getName(), IOUtils.serializeToBase64(s));
     }
 
     @Override
@@ -244,6 +189,7 @@ public class ESStorage extends LoadFunc implements StoreFuncInterface, StoreMeta
         this.reader = reader;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Tuple getNext() throws IOException {
         try {
@@ -251,15 +197,25 @@ public class ESStorage extends LoadFunc implements StoreFuncInterface, StoreMeta
                 return null;
             }
 
-            Tuple tuple = TupleFactory.getInstance().newTuple(2);
-            tuple.set(0, WritableUtils.fromWritable(reader.getCurrentKey()));
-            Object map = WritableUtils.fromWritable(reader.getCurrentValue());
-            tuple.set(1, map);
+            Map<Object, Object> data = (Map<Object, Object>) WritableUtils.fromWritable(reader.getCurrentValue());
+            Tuple tuple = TupleFactory.getInstance().newTuple(data.size());
+            int i = 0;
+            for (Entry<Object, Object> entry : data.entrySet()) {
+                tuple.set(i++, PigTypeUtils.objectToPig(entry.getValue()));
+            }
 
+            if (trace) {
+                log.trace("Reading out tuple " + tuple);
+            }
             return tuple;
 
         } catch (InterruptedException ex) {
             throw new IOException("interrupted", ex);
         }
+    }
+
+    // added in Pig 11.x
+    public void cleanupOnSuccess(String location, Job job) throws IOException {
+        //no-op
     }
 }

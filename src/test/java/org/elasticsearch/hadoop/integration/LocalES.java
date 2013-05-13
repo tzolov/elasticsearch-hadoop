@@ -18,16 +18,18 @@ package org.elasticsearch.hadoop.integration;
 import java.io.File;
 import java.util.Iterator;
 
-import org.apache.commons.io.FileUtils;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequestBuilder;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.hadoop.unit.util.TestUtils;
 import org.elasticsearch.search.SearchHit;
+
+import org.elasticsearch.hadoop.util.TestUtils;
+
 import org.junit.rules.ExternalResource;
 
 public class LocalES extends ExternalResource {
 
     private static ESEmbeddedServer es;
+    public static final String CLUSTER_NAME = "ES-HADOOP-TEST";
     private static final String ES_DATA_PATH = "build/es.data";
     public static final String DATA_PORTS = "9700-9800";
     public static final String TRANSPORT_PORTS = "9800-9900";
@@ -38,7 +40,7 @@ public class LocalES extends ExternalResource {
 
         if (es == null) {
             System.out.println("Starting Elasticsearch...");
-            es = new ESEmbeddedServer(ES_DATA_PATH, DATA_PORTS, TRANSPORT_PORTS);
+            es = new ESEmbeddedServer(CLUSTER_NAME, ES_DATA_PATH, DATA_PORTS, TRANSPORT_PORTS);
             es.start();
         }
     }
@@ -51,7 +53,7 @@ public class LocalES extends ExternalResource {
             es = null;
 
             // delete data folder
-            FileUtils.deleteQuietly(new File(ES_DATA_PATH));
+            TestUtils.delete(new File(ES_DATA_PATH));
         }
     }
     

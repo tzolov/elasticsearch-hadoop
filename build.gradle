@@ -7,9 +7,6 @@ buildscript {
     }
 }
 
-description = 'ElasticSearch Hadoop'
-group = 'org.elasticsearch.hadoop'
-
 repositories {
   
   mavenCentral()  
@@ -25,6 +22,7 @@ repositories {
 apply plugin: "java"
 apply plugin: 'eclipse'
 apply plugin: 'idea'
+apply from: "$rootDir/maven.gradle"
 apply plugin: 'propdeps'
 apply plugin: 'propdeps-idea'
 apply plugin: 'propdeps-eclipse'
@@ -39,7 +37,6 @@ dependencies {
 	compile("org.apache.hadoop:hadoop-tools:$hadoopVersion")
 //	compile("org.apache.hadoop:hadoop-client:$hadoopVersion")
 	
-	optional("commons-io:commons-io:2.1")
 	compile("org.codehaus.jackson:jackson-mapper-asl:1.8.8")
     testRuntime("log4j:log4j:$log4jVersion")
 
@@ -56,6 +53,9 @@ dependencies {
 	
 	// Crunch
 	optional("org.apache.crunch:crunch:$crunchVersion") { changing=true }
+	optional "commons-io:commons-io:$commonsioVersion"
+	//testCompile "commons-io:commons-io:$commonsioVersion"	
+	//testRuntime "commons-io:commons-io:$commonsioVersion"	
     
     // needed by the Hive Server tests
     testRuntime "$hiveGroup:hive-builtins:$hiveVersion" 
@@ -121,7 +121,7 @@ task enablePigTests {
 }
 
 task enableIntegrationTests() {
-    description = "Enable all integration tests"
+    description = "Enable integration tests"
     group = "Verification"
     doLast() {
       println "Enable all integration tests"
@@ -133,7 +133,9 @@ task enableIntegrationTests() {
 test {
     systemProperties['input.path'] = 'build/classes/test/input'
     systemProperties['output.path'] = 'build/classes/test/output'
-    includes = ["org/elasticsearch/hadoop/unit/**/*.class", "org/elasticsearch/hadoop/integration/**/*Suite.class"]
+    includes = ["org/elasticsearch/hadoop/hive/*.class", 
+				"org/elasticsearch/hadoop/util/**/*.class", 
+				"org/elasticsearch/hadoop/integration/**/*Suite.class"]
 
     testLogging {
         events "started" //, "standardOut", "standardError"
@@ -146,15 +148,15 @@ test {
         
         if (skipCascading) {
             ext.msg += "Cascading "
-            excludes.add("**/cascading/**")
+            excludes.add("**/integration/cascading/**")
         }
         if (skipHive) {
             ext.msg += "Hive "
-            excludes.add("**/hive/**")
+            excludes.add("**/integration/hive/**")
         }
         if (skipPig) {
             ext.msg += "Pig"
-            excludes.add("**/pig/**")
+            excludes.add("**/integration/pig/**")
         }
 
         if (!msg.isEmpty())
@@ -179,7 +181,7 @@ jar {
     manifest.attributes['Implementation-Version'] = project.version
     manifest.attributes['Implementation-URL'] = "http://github.com/elasticsearch/elasticsearch-hadoop"
     manifest.attributes['Implementation-Vendor'] = "Elasticsearch"
-    manifest.attributes['Implementation-Vendor-Id'] = "org.elasticsearch"
+    manifest.attributes['Implementation-Vendor-Id'] = "org.elasticsearch.hadoop"
     
     def build = System.env['ESHDP.BUILD']
     if (build != null)

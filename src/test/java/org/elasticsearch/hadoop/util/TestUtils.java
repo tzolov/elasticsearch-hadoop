@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.unit.util;
+package org.elasticsearch.hadoop.util;
+
+import java.io.File;
 
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.commons.logging.LogFactory;
@@ -48,5 +50,20 @@ public class TestUtils {
 
     public static boolean isWindows() {
         return System.getProperty("os.name").toLowerCase().startsWith("win");
+    }
+
+    public static boolean delete(File file) {
+        if (file == null || !file.exists()) {
+            return false;
+        }
+
+        boolean result = true;
+        if (file.isDirectory()) {
+            String[] children = file.list();
+            for (int i = 0; i < children.length; i++) {
+                result &= delete(new File(file, children[i]));
+            }
+        }
+        return file.delete() & result;
     }
 }

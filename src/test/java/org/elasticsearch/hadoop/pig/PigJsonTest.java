@@ -13,20 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.integration.rest;
+package org.elasticsearch.hadoop.pig;
 
-import org.elasticsearch.hadoop.integration.TestSettings;
-import org.elasticsearch.hadoop.rest.RestClient;
+import java.util.Map;
+
+import org.elasticsearch.hadoop.util.JsonUtils;
 import org.junit.Test;
 
-/**
- */
-public abstract class RestTest {
-
-    private RestClient client = new RestClient(new TestSettings());
+public class PigJsonTest {
 
     @Test
-    public void testPagination() throws Exception {
-        client.query("twitter/_search?q=kimchy", 0, 2);
+    public void testJsonWithArray() throws Exception {
+        Map<String, Object> jsonMap = JsonUtils.mapFromJson("/org/elasticsearch/hadoop/pig/array.json");
     }
 }

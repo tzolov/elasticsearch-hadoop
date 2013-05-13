@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.unit.util.unit;
+package org.elasticsearch.hadoop.util.unit;
 
 import org.junit.Test;
 
 import static org.elasticsearch.hadoop.util.unit.ByteSizeUnit.*;
-import static org.hamcrest.MatcherAssert.*;
+
 import static org.hamcrest.Matchers.*;
+
+import static org.hamcrest.MatcherAssert.*;
 
 /**
  *
