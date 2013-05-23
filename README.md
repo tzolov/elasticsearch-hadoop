@@ -201,7 +201,7 @@ With Crunch you have several options to represent the data read from ES: java Ma
 MRPipeline pipeline = new MRPipeline(...);
 PCollection<Map> tweets = pipeline.read(
 	new ESSource.Builder("twitter/tweet/_search?q=user:*", Map.class)
-        .setHost("localhost").setPort(9700).build());
+        .setHost("localhost").setPort(9500).build());
 ```
 The JSON `source` data in ES is mapped into `java.util.Map`. One can use the `get("attributeName")` to retrieve 
 a particular value. The value in turn can be primitive or complex java object.
@@ -209,14 +209,14 @@ a particular value. The value in turn can be primitive or complex java object.
 * To `Writable` class:
 ```java
 PCollection<Tweet> tweets = pipeline.read(
-	new ESSource.Builder<Tweet>("twitter/tweet/_search?q=user:*", Tweet.class).setPort(9700).build());
+	new ESSource.Builder<Tweet>("twitter/tweet/_search?q=user:*", Tweet.class).setPort(9500).build());
 ```
 Maps the ES `source` instances into predefine Tweet (`Writable`) class (uses Jackson's default JSON mapping to map the Writable class into JSON).
 
 * To [Avro][] class:
 ```java
 PCollection<Person> people = pipeline.read(
-    new ESSource.Builder<String>("person/avro/_search?q=*", Person.class).setPort(9700).build());
+    new ESSource.Builder<String>("person/avro/_search?q=*", Person.class).setPort(9500).build());
 ```
 Maps the ES `source` instances into (specific or reflection) Avro classes. Works only with [Avro Specific API][] and [Avro Reflection API][] 
 but doesn't support [Avro Generic API][]! 
@@ -226,7 +226,7 @@ Note: This implementation does not use Avro's Schema deserialize the JSON into t
 * To `String`: 
 ```java
 PCollection<String> people = pipeline.read(
-        new ESSource.Builder<String>("person/avro/_search?q=*", String.class).setPort(9700).build());
+        new ESSource.Builder<String>("person/avro/_search?q=*", String.class).setPort(9500).build());
 ```
 Maps the ES `source` instances into plain java String. 
 
@@ -235,14 +235,14 @@ Crunch provides several mechanisms to represent the data being sent to ES: Java 
 * From `Map`:
 ```java
 PCollection<Map> mapCollection = ...
-pipeline.write(mapCollection, new ESTarget.Builder("twitter/count").setPort(9700).build());
+pipeline.write(mapCollection, new ESTarget.Builder("twitter/count").setPort(9500).build());
 ```
 Uses Jackson to serialize the Map into JSON.
 
 * From `Writable` class:
 ```java
 PCollection<UserMessageCount> writableCollection = ...
-pipeline.write(writableCollection, new ESTarget.Builder("twitter/count").setPort(9700).build());
+pipeline.write(writableCollection, new ESTarget.Builder("twitter/count").setPort(9500).build());
 ```
 This approach uses Jackson to convert the `Writable` class into JSON. Example Writable class:   
 ```java
@@ -266,7 +266,7 @@ _source: {
 * From [Avro][] class:
 ```java
 PCollection<Person> personCollection = ...
-pipeline.write(personCollection, new ESTarget.Builder("person/avro").setPort(9700).build());
+pipeline.write(personCollection, new ESTarget.Builder("person/avro").setPort(9500).build());
 ```
 Note: The Avro class is serialized according to Jakckson's ObjectMapper rules not the Avro schema!
 
@@ -290,8 +290,8 @@ To create a distributable jar, run `gradlew -x test build` from the command line
 [Cascading]: http://www.cascading.org/
 [Tap]: http://docs.cascading.org/cascading/2.1/userguide/html/ch03s05.html
 [Crunch]: http://crunch.apache.org
-[Source]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/Source.html
-[Target]: http://crunch.apache.org/apidocs/0.5.0/org/apache/crunch/Target.html
+[Source]: http://crunch.apache.org/apidocs/0.6.0/org/apache/crunch/Source.html
+[Target]: http://crunch.apache.org/apidocs/0.6.0/org/apache/crunch/Target.html
 [CrunchAvroIT]: https://github.com/tzolov/elasticsearch-hadoop/blob/master/src/test/java/org/elasticsearch/hadoop/integration/crunch/avro/CrunchAvroIT.java
 [CrunchMapSerDeIT]: https://github.com/tzolov/elasticsearch-hadoop/blob/master/src/test/java/org/elasticsearch/hadoop/integration/crunch/writable/e2e/CrunchMapSerDeIT.java
 [CrunchWritableSerDeIT]: https://github.com/tzolov/elasticsearch-hadoop/blob/master/src/test/java/org/elasticsearch/hadoop/integration/crunch/writable/e2e/CrunchWritableSerDeIT.java
