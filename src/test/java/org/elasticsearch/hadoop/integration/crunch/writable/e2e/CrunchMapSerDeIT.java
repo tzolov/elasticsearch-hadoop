@@ -45,12 +45,6 @@ import com.google.common.collect.Maps;
  * {@link Map} entries, apply Crunch to count the number of tweets per user,
  * serialize the result as {@link Map} and writes it back to ES (/twitter/count)
  * index.
- * 
- * <br/>
- * 
- * Prerequisite: <li>Install Crunch:0.6.0-SNAPSHOT in your local Maven
- * repository.</li>
- * 
  */
 public class CrunchMapSerDeIT implements Serializable {
 
@@ -72,7 +66,7 @@ public class CrunchMapSerDeIT implements Serializable {
     // by collection of java.util.Map. One Map element represents one ES
     // 'source' object.
     PCollection<Map> tweets = pipeline.read(new ESSource.Builder("twitter/tweet/_search?q=user:*", Map.class)
-        .setHost("localhost").setPort(9700).build());
+        .setHost("localhost").setPort(9500).build());
 
     // 2. Extract the user names from the tweet elements.
     PCollection<String> users = tweets.parallelDo(new MapFn<Map, String>() {
@@ -101,8 +95,8 @@ public class CrunchMapSerDeIT implements Serializable {
     }, ESTypes.map());
 
     // 5. Write the result into ('twitter/count') ES index type.
-    // (http://localhost:9700/twitter/count/_search?q=*)
-    pipeline.write(esUserTweetCount, new ESTarget.Builder("twitter/count").setHost("localhost").setPort(9700).build());
+    // (http://localhost:9500/twitter/count/_search?q=*)
+    pipeline.write(esUserTweetCount, new ESTarget.Builder("twitter/count").setHost("localhost").setPort(9500).build());
 
     // 6. Execute the pipeline
     assertTrue("Pipeline exectuion has failed!", pipeline.done().succeeded());

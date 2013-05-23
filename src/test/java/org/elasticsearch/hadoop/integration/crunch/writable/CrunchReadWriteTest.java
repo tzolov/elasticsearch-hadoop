@@ -38,10 +38,6 @@ import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
-/**
- * Prerequisite: <li>Install Crunch:0.6.0-SNAPSHOT in your local Maven
- * repository.</li>
- */
 public class CrunchReadWriteTest implements Serializable {
 
   @ClassRule
@@ -75,7 +71,7 @@ public class CrunchReadWriteTest implements Serializable {
           }
         }, records(Artist.class));
 
-    pipeline.write(artists, new ESTarget.Builder("radio/artists").setPort(9700).build());
+    pipeline.write(artists, new ESTarget.Builder("radio/artists").setPort(9500).build());
 
     boolean succeeded = pipeline.done().succeeded();
 
@@ -94,7 +90,7 @@ public class CrunchReadWriteTest implements Serializable {
 
     Iterable<Artist> artists = pipeline
         .read(
-            new ESSource.Builder<MapWritable>("radio/artists/_search?q=me*", MapWritable.class).setPort(9700)
+            new ESSource.Builder<MapWritable>("radio/artists/_search?q=me*", MapWritable.class).setPort(9500)
                 .build()).parallelDo(new MapFn<MapWritable, Artist>() {
           @Override
           public Artist map(MapWritable input) {

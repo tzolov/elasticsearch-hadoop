@@ -50,12 +50,6 @@ import com.google.common.base.Objects;
  * {@link Tweet} (custom {@link Writable}) entries, uses Crunch to count the
  * number of tweets per user, serialize the result as {@link UserMessageCount}
  * (another {@link Writable}) and writes it back to ES (/twitter/count) index.
- * 
- * <br/>
- * 
- * Prerequisite: <li>Install Crunch:0.6.0-SNAPSHOT in your local Maven
- * repository.</li>
- * 
  */
 public class CrunchWritableSerDeIT implements Serializable {
 
@@ -141,7 +135,7 @@ public class CrunchWritableSerDeIT implements Serializable {
     // by collection of UserMessageCount. One UserMessageCount instance
     // represents one ES 'source' object.
     PCollection<Tweet> tweets = pipeline.read(new ESSource.Builder<Tweet>("twitter/tweet/_search?q=user:*",
-        Tweet.class).setPort(9700).build());
+        Tweet.class).setPort(9500).build());
 
     // TODO find better way to convert the PType
     IdentityFn<Tweet> identityFn = IdentityFn.getInstance();
@@ -164,7 +158,7 @@ public class CrunchWritableSerDeIT implements Serializable {
 
     // 5. Write the result into ('twitter/count') ES index type.
     // (http://localhost:9200/twitter/count/_search?q=*)
-    pipeline.write(esUserTweetCount, new ESTarget.Builder("twitter/count").setHost("localhost").setPort(9700).build());
+    pipeline.write(esUserTweetCount, new ESTarget.Builder("twitter/count").setHost("localhost").setPort(9500).build());
 
     // 6. Execute the pipeline
     assertTrue("Pipeline exectuion has failed!", pipeline.done().succeeded());

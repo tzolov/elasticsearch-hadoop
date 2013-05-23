@@ -17,17 +17,26 @@ package org.elasticsearch.hadoop.rest;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-import org.apache.commons.lang.Validate;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.Writable;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
 import org.elasticsearch.hadoop.cfg.Settings;
+import org.elasticsearch.hadoop.util.Assert;
+import org.elasticsearch.hadoop.util.StringUtils;
 import org.elasticsearch.hadoop.util.WritableUtils;
 
 /**
  * Rest client performing high-level operations using buffers to improve performance. Stateful in that once created, it is used to perform updates against the same index.
  */
 public class BufferedRestClient implements Closeable {
+
+    private static Log log = LogFactory.getLog(BufferedRestClient.class);
 
     // TODO: make this configurable
     private final byte[] buffer;
@@ -42,25 +51,42 @@ public class BufferedRestClient implements Closeable {
 
     private RestClient client;
     private String index;
+    private Resource resource;
+    private final boolean trace;
 
     public BufferedRestClient(Settings settings) {
       //    mapper.getSerializationConfig().disable(SerializationConfig.Feature.FAIL_ON_EMPTY_BEANS);      
         this.client = new RestClient(settings);
-        this.index = settings.getTargetResource();
+        String tempIndex = settings.getTargetResource();
+        if (tempIndex == null) {
+            tempIndex = ""; 
+            //FIX for issue #26
+            tempIndex = settings.getProperty(ConfigurationOptions.ES_QUERY);
+            if (tempIndex == null) {
+              tempIndex = "";  
+            }
+
+        }
+        this.index = tempIndex;
+        this.resource = new Resource(index);
 
         buffer = new byte[settings.getBatchSizeInBytes()];
         bufferEntriesThreshold = settings.getBatchSizeInEntries();
         requiresRefreshAfterBulk = settings.getBatchRefreshAfterWrite();
+        trace = log.isTraceEnabled();
     }
 
     /**
-     * Returns a pageable result to the given query.
+     * Returns a pageable (scan based) result to the given query.
      *
      * @param uri
      * @return
      */
-    public QueryResult query(String uri) {
-        return new QueryResult(client, uri);
+    ScrollQuery scan(String query) throws IOException {
+        String[] scrollInfo = client.scan(query);
+        String scrollId = scrollInfo[0];
+        long totalSize = Long.parseLong(scrollInfo[1]);
+        return new ScrollQuery(client, scrollId, totalSize);
     }
 
     /**
@@ -70,14 +96,14 @@ public class BufferedRestClient implements Closeable {
      * @param object
      */
     public void addToIndex(Object object) throws IOException {
-        Validate.notEmpty(index, "no index given");
+        Assert.hasText(index, "no index given");
 
         Object d = (object instanceof Writable ? WritableUtils.fromWritable((Writable) object) : object);
 
-        StringBuilder sb = new StringBuilder();
 
-        sb.append("{\"index\":{}}\n");
+        StringBuilder sb = new StringBuilder("{\"index\":{}}\n");
 
+        //(Chris) allow adding plain json string to the index 
         if (object instanceof String) {
           sb.append(d);
         } else {
@@ -85,7 +111,13 @@ public class BufferedRestClient implements Closeable {
         }
         sb.append("\n");
 
-        byte[] data = sb.toString().getBytes("UTF-8");
+        String str = sb.toString();
+
+        if (trace) {
+            log.trace(String.format("Indexing object [%s]", str));
+        }
+
+        byte[] data = str.getBytes(StringUtils.UTF_8);
 
         // make some space first
         if (data.length + bufferSize >= buffer.length) {
@@ -102,6 +134,10 @@ public class BufferedRestClient implements Closeable {
     }
 
     private void flushBatch() throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Flushing batch of [%d]", bufferSize));
+        }
+
         client.bulk(index, buffer, bufferSize);
         bufferSize = 0;
         bufferEntries = 0;
@@ -116,7 +152,33 @@ public class BufferedRestClient implements Closeable {
         if (requiresRefreshAfterBulk && executedBulkWrite) {
             // refresh batch
             client.refresh(index);
+
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("Refreshing index [%s]", index));
+            }
         }
         client.close();
+    }
+
+    public RestClient getRestClient() {
+        return client;
+    }
+
+    public Map<Shard, Node> getTargetShards() throws IOException {
+        Map<String, Node> nodes = client.getNodes();
+
+        List<List<Map<String, Object>>> info = client.targetShards(resource.targetShards());
+        Map<Shard, Node> shards = new LinkedHashMap<Shard, Node>(info.size());
+        for (List<Map<String, Object>> shardGroup : info) {
+            for (Map<String, Object> shardData : shardGroup) {
+                Shard shard = new Shard(shardData);
+                if (shard.getState().isStarted()) {
+                    Node node = nodes.get(shard.getNode());
+                    Assert.notNull(node, "Cannot find node with id [" + shard.getNode() + "]");
+                    shards.put(shard, node);
+                }
+            }
+        }
+        return shards;
     }
 }

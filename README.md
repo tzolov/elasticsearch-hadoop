@@ -276,12 +276,6 @@ ElasticSearch Hadoop uses [Gradle][] for its build system and it is not required
 
 To create a distributable jar, run `gradlew -x test build` from the command line; once completed you will find the jar in `build\libs`.
 
-```
-Note: To satisfy the Crunch:0.6.0-SNAPSHOT (e.g. trunk) dependency you have to checkout the latest Crunch version 
-and install it in your local Maven repository:
- $ git clone http://git-wip-us.apache.org/repos/asf/crunch.git
- $ mvn clean install -DskipTests -Drat.numUnapprovedLicenses=1000
-```
 
 [Hadoop]: http://hadoop.apache.org
 [MapReduce]: http://hadoop.apache.org/docs/r1.0.4/mapred_tutorial.html

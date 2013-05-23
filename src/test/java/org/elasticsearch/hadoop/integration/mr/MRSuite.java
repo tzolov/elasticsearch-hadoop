@@ -13,27 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.cfg;
+package org.elasticsearch.hadoop.integration.mr;
 
-import org.apache.hadoop.conf.Configuration;
-import org.elasticsearch.hadoop.util.Assert;
+import org.elasticsearch.hadoop.integration.LocalES;
+import org.junit.ClassRule;
+import org.junit.rules.ExternalResource;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-public class HadoopSettings extends Settings {
-
-    private final Configuration cfg;
-
-    public HadoopSettings(Configuration cfg) {
-        Assert.notNull(cfg, "Non-null properties expected");
-        this.cfg = cfg;
-    }
-
-    @Override
-    public String getProperty(String name) {
-        return cfg.get(name);
-    }
-
-    @Override
-    public void setProperty(String name, String value) {
-        cfg.set(name, value);
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({ MROldApiSaveTest.class, MROldApiSearchTest.class, MRNewApiSaveTest.class, MRNewApiSearchTest.class })
+public class MRSuite {
+    @ClassRule
+    public static ExternalResource resource = new LocalES();
 }

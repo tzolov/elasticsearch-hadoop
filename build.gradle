@@ -10,8 +10,7 @@ buildscript {
 repositories {
   
   mavenCentral()  
-  mavenLocal()
-    
+  mavenLocal()    
   maven { url "http://oss.sonatype.org/content/groups/public/" }
   // JDO ec2 missing from Maven Central
   maven { url "http://www.datanucleus.org/downloads/maven2" }
@@ -28,8 +27,6 @@ apply plugin: 'propdeps-idea'
 apply plugin: 'propdeps-eclipse'
 apply plugin: 'maven'
 
-def antlrVersion
-
 dependencies {
 	ext.hadoopVersion=hadoop10Version
 	
@@ -37,7 +34,7 @@ dependencies {
 	compile("org.apache.hadoop:hadoop-tools:$hadoopVersion")
 //	compile("org.apache.hadoop:hadoop-client:$hadoopVersion")
 	
-	compile("org.codehaus.jackson:jackson-mapper-asl:1.8.8")
+	compile("org.codehaus.jackson:jackson-mapper-asl:$jacksonVersion")
     testRuntime("log4j:log4j:$log4jVersion")
 
     // Pig
@@ -52,18 +49,20 @@ dependencies {
 	optional("cascading:cascading-local:$cascadingVersion")
 	
 	// Crunch
-	optional("org.apache.crunch:crunch:$crunchVersion") { changing=true }
+	optional("org.apache.crunch:crunch-core:$crunchVersion") { changing=true }
 	optional "commons-io:commons-io:$commonsioVersion"
 	//testCompile "commons-io:commons-io:$commonsioVersion"	
 	//testRuntime "commons-io:commons-io:$commonsioVersion"	
     
-    // needed by the Hive Server tests
-    testRuntime "$hiveGroup:hive-builtins:$hiveVersion" 
+    // needed by the Hive Server tests - removed since Hive 0.11
+    // testRuntime "$hiveGroup:hive-builtins:$hiveVersion" 
 
     // Testing
     testCompile "junit:junit:$junitVersion"
 	testCompile "org.hamcrest:hamcrest-all:$hamcrestVersion"
     testCompile "org.elasticsearch:elasticsearch:$esVersion"
+	// missing dependency in Hadoop 1.0.3/1.0.4
+	testCompile "commons-io:commons-io:2.1"
 	
 	// Required by Pig
 	testRuntime "com.google.guava:guava:11.0"
@@ -71,6 +70,9 @@ dependencies {
 
 	// Needed for testing Crunch/Avro support    
     testCompile("org.apache.avro:avro:1.7.0")    
+	
+	// Required by Hive + Pig
+	// testRuntime "org.antlr:antlr-runtime:$antlrVersion"
 }
 
 configurations.all {
@@ -83,8 +85,17 @@ sourceCompatibility = 1.6
 targetCompatibility = 1.6 
 
 ext.skipCascading = true
+ext.skipMR = true
 ext.skipHive = true
 ext.skipPig = true
+
+task enableMRTests {
+    description = "Enable Map/Reduce tests"
+    group = "Verification"
+    doLast() {
+        project.ext.skipMR = false
+   }
+}
 
 task enableCascadingTests {
     description = "Enable Cascading tests"
@@ -99,12 +110,7 @@ task enableHiveTests {
     group = "Verification"
     doLast() {
         project.ext.skipHive = false
-		project.ext.skipPig = true
-		antlrVersion = antlrForHiveVersion
-		dependencies {
-			testRuntime "org.antlr:antlr-runtime:$antlrForHiveVersion"
-		}
-   }
+  }
 }
 
 task enablePigTests {
@@ -113,10 +119,6 @@ task enablePigTests {
     
     doLast() {
         project.ext.skipPig = false
-		project.ext.skipHive = true
-		dependencies {
-			testRuntime "org.antlr:antlr-runtime:$antlrForPigVersion"
-		}
   }
 }
 
@@ -125,8 +127,10 @@ task enableIntegrationTests() {
     group = "Verification"
     doLast() {
       println "Enable all integration tests"
-  	  project.ext.skipCascading = false
+	  enableMRTests.execute()
+  	  enableCascadingTests.execute()
 	  enablePigTests.execute()
+	  //enableHiveTests.execute()
     }
 }
 
@@ -134,18 +138,27 @@ test {
     systemProperties['input.path'] = 'build/classes/test/input'
     systemProperties['output.path'] = 'build/classes/test/output'
     includes = ["org/elasticsearch/hadoop/hive/*.class", 
+				"org/elasticsearch/hadoop/pig/*.class",
+				"org/elasticsearch/hadoop/rest/*.class",
 				"org/elasticsearch/hadoop/util/**/*.class", 
 				"org/elasticsearch/hadoop/integration/**/*Suite.class"]
+
+	minHeapSize = "256m"
+	maxHeapSize = "512m"
 
     testLogging {
         events "started" //, "standardOut", "standardError"
         minGranularity 2
         maxGranularity 2
     }
-
+	
     doFirst() {
         ext.msg = ""
-        
+
+        if (skipMR) {
+            ext.msg += "MapReduce "
+            excludes.add("**/integration/mr/**")
+        }
         if (skipCascading) {
             ext.msg += "Cascading "
             excludes.add("**/integration/cascading/**")

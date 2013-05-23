@@ -117,7 +117,7 @@ public class CrunchAvroIT implements Serializable {
         Avros.records(Person.class)));
 
     // 2. Write the person collection to ES index
-    pipeline.write(personCollection, new ESTarget.Builder("person/avro").setPort(9700).build());
+    pipeline.write(personCollection, new ESTarget.Builder("person/avro").setPort(9500).build());
 
     assertTrue("Pipeline exectuion failed!", pipeline.done().succeeded());
 
@@ -129,7 +129,7 @@ public class CrunchAvroIT implements Serializable {
     IdentityFn<String> identityFn = IdentityFn.getInstance();
 
     PCollection<String> rawCollection = pipeline.read(
-        new ESSource.Builder<String>("person/avro/_search?q=*", String.class).setPort(9700).build()).parallelDo(
+        new ESSource.Builder<String>("person/avro/_search?q=*", String.class).setPort(9500).build()).parallelDo(
         identityFn, tf.strings());
 
     ArrayList<String> list = Lists.newArrayList(rawCollection.materialize());
@@ -144,7 +144,7 @@ public class CrunchAvroIT implements Serializable {
     MRPipeline pipeline = new MRPipeline(CrunchAvroIT.class);
 
     PCollection<Person> people = pipeline.read(
-        new ESSource.Builder<Person>("person/avro/_search?q=*", Person.class).setPort(9700).build()).parallelDo(
+        new ESSource.Builder<Person>("person/avro/_search?q=*", Person.class).setPort(9500).build()).parallelDo(
         identityFn, Avros.specifics(Person.class));
 
     assertEquals(AvroTypeFamily.getInstance(), people.getPType().getFamily());
@@ -166,7 +166,7 @@ public class CrunchAvroIT implements Serializable {
     MRPipeline pipeline = new MRPipeline(CrunchAvroIT.class);
 
     PCollection<Person> people = pipeline.read(
-        new ESSource.Builder<Person>("person/avro/_search?q=*", Person.class).setPort(9700).build()).parallelDo(
+        new ESSource.Builder<Person>("person/avro/_search?q=*", Person.class).setPort(9500).build()).parallelDo(
         new MapFn<Person, Person>() {
 
           @Override

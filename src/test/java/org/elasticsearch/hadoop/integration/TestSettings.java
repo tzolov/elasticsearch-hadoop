@@ -29,10 +29,15 @@ public class TestSettings extends PropertiesSettings {
     static {
         TESTING_PROPS.put(ES_BATCH_SIZE_BYTES, "8kb");
         // see TestSettings
-        TESTING_PROPS.put(ES_PORT, "9700");
+        TESTING_PROPS.put(ES_PORT, "9500");
     }
 
     public TestSettings() {
         super(TESTING_PROPS);
+    }
+
+    public TestSettings(String uri) {
+        this();
+        setProperty(ES_RESOURCE, uri);
     }
 }

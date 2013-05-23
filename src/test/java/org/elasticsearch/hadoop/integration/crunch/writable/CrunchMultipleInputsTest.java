@@ -36,11 +36,6 @@ import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
-/**
- * Prerequisite: <li>Install Crunch:0.6.0-SNAPSHOT in your local Maven
- * repository.</li>
- * 
- */
 @SuppressWarnings("rawtypes")
 public class CrunchMultipleInputsTest implements Serializable {
 
@@ -87,13 +82,16 @@ public class CrunchMultipleInputsTest implements Serializable {
     MRPipeline pipeline = new MRPipeline(CrunchMultipleInputsTest.class);
 
     PCollection<String> users1 = pipeline.read(
-        new ESSource.Builder<Map>("twitter1/tweet/_search?q=*", Map.class).setPort(9700).build()).parallelDo(
+        new ESSource.Builder<Map>("twitter1/tweet/_search?q=*", Map.class).setPort(9500).build()).parallelDo(
         new ExtractField("user"), tf.strings());
 
     PCollection<String> users2 = pipeline.read(
-        new ESSource.Builder<Map>("twitter2/tweet/_search?q=*", Map.class).setPort(9700).build()).parallelDo(
+        new ESSource.Builder<Map>("twitter2/tweet/_search?q=*", Map.class).setPort(9500).build()).parallelDo(
         new ExtractField("user"), tf.strings());
 
+//    for (String s: Lists.newArrayList(users1.materialize().iterator())) {
+//      System.out.println(s);
+//    }
     assertEquals(2, Lists.newArrayList(users1.union(users2).materialize().iterator()).size());
   }
 }

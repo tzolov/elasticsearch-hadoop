@@ -15,9 +15,11 @@
  */
 package org.elasticsearch.hadoop.integration.cascading;
 
+import java.util.Properties;
+
 import org.elasticsearch.hadoop.cascading.ESTap;
+import org.elasticsearch.hadoop.integration.Stream;
 import org.elasticsearch.hadoop.integration.TestSettings;
-import org.elasticsearch.hadoop.integration.cascading.HadoopPrintStreamTap.Stream;
 import org.junit.Test;
 
 import cascading.flow.hadoop.HadoopFlowConnector;
@@ -31,8 +33,12 @@ public class CascadingHadoopSearchTest {
         Tap in = new ESTap("cascading-hadoop/artists/_search?q=me*");
         Pipe copy = new Pipe("copy");
         // print out
-        Tap out = new HadoopPrintStreamTap(Stream.OUT);
+        Tap out = new HadoopPrintStreamTap(Stream.NULL);
 
-        new HadoopFlowConnector(TestSettings.TESTING_PROPS).connect(in, out, copy).complete();
+        Properties props = new Properties(TestSettings.TESTING_PROPS);
+        //FlowConnectorProps.setDebugLevel(props, DebugLevel.VERBOSE);
+
+
+        new HadoopFlowConnector(props).connect(in, out, copy).complete();
     }
 }

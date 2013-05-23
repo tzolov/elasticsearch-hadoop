@@ -13,27 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.cfg;
+package org.elasticsearch.hadoop.rest;
 
-import org.apache.hadoop.conf.Configuration;
-import org.elasticsearch.hadoop.util.Assert;
+import org.apache.commons.httpclient.methods.GetMethod;
 
-public class HadoopSettings extends Settings {
+public class TestRestClient {
 
-    private final Configuration cfg;
+    private final RestClient restClient;
 
-    public HadoopSettings(Configuration cfg) {
-        Assert.notNull(cfg, "Non-null properties expected");
-        this.cfg = cfg;
+    public TestRestClient(RestClient restClient) {
+        this.restClient = restClient;
     }
 
-    @Override
-    public String getProperty(String name) {
-        return cfg.get(name);
+    public void waitForShards() {
+        restClient.execute(new GetMethod("_cluster/health?level=indices&wait_for_status=green"));
     }
 
-    @Override
-    public void setProperty(String name, String value) {
-        cfg.set(name, value);
+    public void waitForShards(String index) {
+        restClient.execute(new GetMethod("_cluster/health/" + index + "?level=indices&wait_for_status=yellow"));
     }
 }

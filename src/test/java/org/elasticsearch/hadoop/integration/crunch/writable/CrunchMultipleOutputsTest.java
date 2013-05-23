@@ -35,10 +35,6 @@ import org.elasticsearch.hadoop.integration.crunch.writable.domain.Artist;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-/**
- * Prerequisite: <li>Install Crunch:0.6.0-SNAPSHOT in your local Maven
- * repository.</li>
- */
 public class CrunchMultipleOutputsTest implements Serializable {
 
   @ClassRule
@@ -77,9 +73,9 @@ public class CrunchMultipleOutputsTest implements Serializable {
 
     PCollection<Artist> artistsUnion = artists1.union(artists2);
 
-    pipeline.write(artistsUnion, new ESTarget.Builder("radio/artists").setPort(9700).build());
-    pipeline.write(artists1, new ESTarget.Builder("radio/artists1").setPort(9700).build());
-    pipeline.write(artists2, new ESTarget.Builder("radio/artists2").setPort(9700).build());
+    pipeline.write(artistsUnion, new ESTarget.Builder("radio/artists").setPort(9500).build());
+    pipeline.write(artists1, new ESTarget.Builder("radio/artists1").setPort(9500).build());
+    pipeline.write(artists2, new ESTarget.Builder("radio/artists2").setPort(9500).build());
 
     boolean succeeded = pipeline.done().succeeded();
 

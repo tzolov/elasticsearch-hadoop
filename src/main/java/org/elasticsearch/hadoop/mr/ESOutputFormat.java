@@ -19,10 +19,11 @@ import java.io.IOException;
 
 import org.apache.avro.mapred.AvroWrapper;
 import org.apache.commons.lang.Validate;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapreduce.JobContext;
@@ -34,12 +35,13 @@ import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
 import org.elasticsearch.hadoop.cfg.Settings;
 import org.elasticsearch.hadoop.cfg.SettingsManager;
 import org.elasticsearch.hadoop.rest.BufferedRestClient;
-import org.elasticsearch.hadoop.util.WritableUtils;
 
 /**
  * ElasticSearch {@link OutputFormat} (old and new API) for adding data to an index inside ElasticSearch.
  */
 public class ESOutputFormat extends OutputFormat<Object, Object> implements org.apache.hadoop.mapred.OutputFormat<Object, Object>, ConfigurationOptions {
+
+    private static Log log = LogFactory.getLog(ESOutputFormat.class);
 
     // don't use mapred.OutputCommitter as it performs mandatory casts to old API resulting in CCE
     public static class ESOutputCommitter extends org.apache.hadoop.mapreduce.OutputCommitter {
@@ -98,14 +100,25 @@ public class ESOutputFormat extends OutputFormat<Object, Object> implements org.
         public void abortTask(org.apache.hadoop.mapred.TaskAttemptContext taskContext) throws IOException {
             //no-op
         }
+
+        @Override
+        @Deprecated
+        public void cleanupJob(org.apache.hadoop.mapred.JobContext context) throws IOException {
+            // no-op
+            // added for compatibility with hadoop 0.20.x (used by old tools, such as Cascalog)
+        }
     }
 
     protected static class ESRecordWriter extends RecordWriter<Object, Object> implements org.apache.hadoop.mapred.RecordWriter<Object, Object> {
 
         private final BufferedRestClient client;
+        private final String uri, resource;
 
         public ESRecordWriter(Configuration cfg) {
-            client = new BufferedRestClient(SettingsManager.loadFrom(cfg));
+            Settings settings = SettingsManager.loadFrom(cfg);
+            client = new BufferedRestClient(settings);
+            uri = settings.getTargetUri();
+            resource = settings.getTargetResource();
         }
 
         @Override
@@ -126,40 +139,44 @@ public class ESOutputFormat extends OutputFormat<Object, Object> implements org.
     
         @Override
         public void close(Reporter reporter) throws IOException {
+          if (log.isTraceEnabled()) {
+            log.trace(String.format("Closing RecordWriter [%s][%s]", uri, resource));
+          }
           client.close();
         }
     }
 
-  //
-  // new API - just delegates to the Old API
-  //
-  @Override
-  public ESRecordWriter getRecordWriter(TaskAttemptContext context) {
-    return getRecordWriter(null, (JobConf) context.getConfiguration(), null, context);
-  }
+    //
+    // new API - just delegates to the Old API
+    //
+    @Override
+    public ESRecordWriter getRecordWriter(TaskAttemptContext context) {
+        return getRecordWriter(null, (JobConf) context.getConfiguration(), null, context);
+    }
 
-  @Override
-  public void checkOutputSpecs(JobContext context) {
-    checkOutputSpecs(null, (JobConf) context.getConfiguration());
-  }
+    @Override
+    public void checkOutputSpecs(JobContext context) {
+        checkOutputSpecs(null, (JobConf) context.getConfiguration());
+    }
 
-  @Override
-  public org.apache.hadoop.mapreduce.OutputCommitter getOutputCommitter(TaskAttemptContext context) {
-    return new ESOutputCommitter();
-  }
+    @Override
+    public org.apache.hadoop.mapreduce.OutputCommitter getOutputCommitter(TaskAttemptContext context) {
+        return new ESOutputCommitter();
+    }
 
-  //
-  // old API
-  //
-  @Override
-  public ESRecordWriter getRecordWriter(FileSystem ignored, JobConf job, String name, Progressable progress) {
-    return new ESRecordWriter(job);
-  }
+    //
+    // old API
+    //
+    @Override
+    public ESRecordWriter getRecordWriter(FileSystem ignored, JobConf job, String name, Progressable progress) {
+        return new ESRecordWriter(job);
+    }
 
-  @Override
-  public void checkOutputSpecs(FileSystem ignored, JobConf cfg) {
-    Settings settings = SettingsManager.loadFrom(cfg);
+    @Override
+    public void checkOutputSpecs(FileSystem ignored, JobConf cfg) {
+        Settings settings = SettingsManager.loadFrom(cfg);
+        Validate.notEmpty(settings.getTargetResource(), String.format("No resource ['%s'] (index/query/location) specified", ES_RESOURCE));
 
-    Validate.notEmpty(settings.getTargetResource(), String.format("No resource ['%s'] (index/query/location) specified", ES_RESOURCE));
-  }
+        log.info(String.format("Preparing to write/index to [%s][%s]", settings.getTargetUri(), settings.getTargetResource()));
+    }
 }

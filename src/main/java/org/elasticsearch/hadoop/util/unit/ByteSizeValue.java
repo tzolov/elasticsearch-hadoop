@@ -112,12 +112,12 @@ public class ByteSizeValue {
             value = kbFrac();
             suffix = "kb";
         }
-        return StringUtils.format1Decimals(value, suffix);
+        return Strings.format1Decimals(value, suffix);
     }
 
     public static ByteSizeValue parseBytesSizeValue(String sValue) throws IllegalArgumentException {
         long bytes;
-        sValue = org.apache.commons.lang.StringUtils.deleteWhitespace(sValue);
+        sValue = org.elasticsearch.hadoop.util.StringUtils.deleteWhitespace(sValue);
 
         try {
             if (sValue.endsWith("k") || sValue.endsWith("K")) {

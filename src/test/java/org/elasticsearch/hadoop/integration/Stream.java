@@ -13,20 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.integration.rest;
+package org.elasticsearch.hadoop.integration;
 
-import org.elasticsearch.hadoop.integration.TestSettings;
-import org.elasticsearch.hadoop.rest.RestClient;
-import org.junit.Test;
+import java.io.PrintStream;
 
-/**
- */
-public abstract class RestTest {
+public enum Stream {
+    OUT {
+        @Override
+        public PrintStream stream() {
+            return System.out;
+        }
+    },
+    ERR {
+        @Override
+        public PrintStream stream() {
+            return System.err;
+        }
+    },
+    NULL {
+        @Override
+        public PrintStream stream() {
+            return new NullPrintStream();
+        }
+    };
 
-    private RestClient client = new RestClient(new TestSettings());
-
-    @Test
-    public void testPagination() throws Exception {
-        client.query("twitter/_search?q=kimchy", 0, 2);
-    }
+    public abstract PrintStream stream();
 }
